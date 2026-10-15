@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12-1 CSS 变量 - 孙家政</title>
+    <style>
+        /* ========== 定义 CSS 变量（自定义属性） ========== */
+        :root {
+            --primary: #6c63ff;
+            --primary-dark: #4b44c9;
+            --bg-dark: #0f0c29;
+            --bg-card: rgba(48, 43, 99, 0.85);
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0d0;
+            --radius: 12px;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --spacing: 20px;
+            --font-main: "Microsoft YaHei", "SimHei", "PingFang SC", sans-serif;
+        }
+
+        /* ========== 亮色主题变量覆盖 ========== */
+        .theme-light {
+            --primary: #e91e63;
+            --bg-dark: #f3e9f7;
+            --bg-card: #ffffff;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --shadow: 0 8px 24px rgba(180, 100, 150, 0.25);
+        }
+
+        /* ========== 基础样式（使用变量） ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, var(--bg-dark), #302b63, #24243e);
+            min-height: 100vh;
+            color: var(--text-main);
+            line-height: 1.8;
+            transition: background 0.4s, color 0.4s;
+        }
+
+        .theme-light body,
+        body.theme-light {
+            background: linear-gradient(135deg, #f3e9f7, #ffe3ef, #fff6fa);
+            color: var(--text-main);
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 20px 30px;
+        }
+
+        header h1 {
+            font-size: 34px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(108, 99, 255, 0.6);
+            margin-bottom: 10px;
+        }
+
+        body.theme-light header h1 {
+            color: var(--primary);
+            text-shadow: none;
+        }
+
+        header .subtitle {
+            font-size: 16px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        main {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: var(--spacing);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--spacing);
+        }
+
+        /* ========== 卡片（全部使用变量） ========== */
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: var(--spacing);
+            border-top: 4px solid var(--primary);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        /* ========== 姓名展示（变量驱动） ========== */
+        .name-card {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px var(--spacing);
+        }
+
+        .name-card .name {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: var(--primary);
+            text-shadow: 0 0 30px rgba(108, 99, 255, 0.5);
+        }
+
+        .name-card .tagline {
+            margin-top: 10px;
+            font-size: 16px;
+            color: var(--text-muted);
+        }
+
+        /* ========== var() 回退值演示 ========== */
+        .fallback-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: calc(var(--radius) / 2);
+            /* --undefined-color 未定义，使用回退值 orange */
+            background: var(--undefined-color, orange);
+            color: #fff;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        /* ========== 主题切换按钮 ========== */
+        .toggle-wrap {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .toggle-btn {
+            font-family: var(--font-main);
+            font-size: 16px;
+            padding: 10px 32px;
+            border: none;
+            border-radius: 25px;
+            background: var(--primary);
+            color: #fff;
+            cursor: pointer;
+            letter-spacing: 2px;
+            box-shadow: var(--shadow);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        code.inline {
+            background: rgba(108, 99, 255, 0.2);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CSS 变量（自定义属性）演示</h1>
+        <p class="subtitle">12-1.html · 高级网页设计课堂实践</p>
+    </header>
+
+    <div class="toggle-wrap">
+        <button class="toggle-btn" id="toggleBtn">切换亮色主题</button>
+    </div>
+
+    <main>
+        <!-- 姓名卡片：颜色、字号、间距全部由 CSS 变量控制 -->
+        <section class="card name-card">
+            <div class="name">孙家政</div>
+            <p class="tagline">学号 1001 · 通过 <code class="inline">var(--primary)</code> 与
+                <code class="inline">var(--font-main)</code> 渲染此卡片</p>
+        </section>
+
+        <section class="card">
+            <h2>什么是 CSS 变量</h2>
+            <p>以 <code class="inline">--</code> 前缀声明，通过 <code class="inline">var()</code> 引用。
+                本页所有颜色、圆角、阴影、间距均来自 <code class="inline">:root</code> 中的变量定义。</p>
+        </section>
+
+        <section class="card">
+            <h2>作用域与继承</h2>
+            <p>定义在 <code class="inline">:root</code> 上的变量对整个文档生效；定义在某个选择器内部的变量只在该元素及其子元素中生效，体现 CSS 的继承特性。</p>
+        </section>
+
+        <section class="card">
+            <h2>var() 回退值</h2>
+            <p>当变量未定义时，可使用第二个参数作为回退值。下方色块引用了不存在的 <code class="inline">--undefined-color</code>，因此显示回退颜色：</p>
+            <div class="fallback-box">var(--undefined-color, orange)</div>
+        </section>
+
+        <section class="card">
+            <h2>动态切换主题</h2>
+            <p>点击上方按钮，通过给 <code class="inline">&lt;body&gt;</code> 添加
+                <code class="inline">theme-light</code> 类覆盖同名变量，即可整站换肤，无需逐条修改样式。</p>
+        </section>
+
+        <section class="card">
+            <h2>变量参与计算</h2>
+            <p>变量可以参与 <code class="inline">calc()</code> 计算，例如本卡片圆角使用
+                <code class="inline">calc(var(--radius) / 2)</code>，间距统一由
+                <code class="inline">var(--spacing)</code> 管理。</p>
+        </section>
+    </main>
+
+    <footer>孙家政 · 1001 · CSS 变量练习</footer>
+
+    <script>
+        const btn = document.getElementById('toggleBtn');
+        btn.addEventListener('click', function () {
+            document.body.classList.toggle('theme-light');
+            btn.textContent = document.body.classList.contains('theme-light')
+                ? '切换暗色主题'
+                : '切换亮色主题';
+        });
+    </script>
+</body>
+</html>
