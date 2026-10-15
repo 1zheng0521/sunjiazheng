@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13-1 Grid 网格布局 - 孙家政</title>
+    <style>
+        :root {
+            --bg-dark: #0f0c29;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0d0;
+            --radius: 12px;
+            --spacing: 14px;
+            --font-main: "Microsoft YaHei", "SimHei", "PingFang SC", sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, var(--bg-dark), #302b63, #24243e);
+            min-height: 100vh;
+            color: var(--text-main);
+            line-height: 1.8;
+        }
+
+        header {
+            text-align: center;
+            padding: 50px 20px 20px;
+        }
+
+        header h1 {
+            font-size: 34px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(108, 99, 255, 0.6);
+            margin-bottom: 10px;
+        }
+
+        header .subtitle {
+            font-size: 16px;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+        }
+
+        /* ========== 网格容器 ========== */
+        .grid {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: var(--spacing);
+            display: grid;
+            /* 使用命名区域搭出 'a b b' 'c d d' 'c d e' 'c d f' 的结构 */
+            grid-template-areas:
+                'a b b'
+                'c d d'
+                'c d e'
+                'c d f';
+            grid-template-columns: 1.2fr 1fr 1fr;
+            grid-template-rows: 90px 90px 90px 90px;
+            gap: var(--spacing);
+        }
+
+        .grid > div {
+            border-radius: var(--radius);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 22px;
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: transform 0.25s;
+        }
+
+        .grid > div:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+
+        .grid > div span {
+            font-size: 13px;
+            font-weight: 400;
+            margin-top: 6px;
+            opacity: 0.85;
+        }
+
+        /* ========== 各区域映射与配色 ========== */
+        .area-a { grid-area: a; background: linear-gradient(135deg, #6c63ff, #4b44c9); }
+        .area-b { grid-area: b; background: linear-gradient(135deg, #ff6b9d, #c94b8a); }
+        .area-c { grid-area: c; background: linear-gradient(135deg, #00c9a7, #008f7a); }
+        .area-d { grid-area: d; background: linear-gradient(135deg, #ffa62b, #d97e00); }
+        .area-e { grid-area: e; background: linear-gradient(135deg, #4dabf7, #1971c2); }
+        .area-f { grid-area: f; background: linear-gradient(135deg, #f06595, #c2255c); }
+
+        .code-note {
+            max-width: 900px;
+            margin: 0 auto 40px;
+            padding: 20px;
+            background: rgba(48, 43, 99, 0.85);
+            border-radius: var(--radius);
+            border-left: 4px solid #6c63ff;
+        }
+
+        .code-note h2 {
+            font-size: 18px;
+            color: #6c63ff;
+            margin-bottom: 10px;
+        }
+
+        .code-note pre {
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 14px;
+            color: #c8c8ff;
+            white-space: pre-wrap;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CSS Grid 网格布局</h1>
+        <p class="subtitle">13-1.html · 孙家政 · 高级网页设计课堂实践</p>
+    </header>
+
+    <!-- grid-template-areas: 'a b b' 'c d d' 'c d e' 'c d f' -->
+    <section class="grid">
+        <div class="area-a">a<span>第 1 行第 1 列</span></div>
+        <div class="area-b">b<span>第 1 行第 2-3 列</span></div>
+        <div class="area-c">c<span>第 2-4 行第 1 列</span></div>
+        <div class="area-d">d<span>第 2-4 行第 2 列</span></div>
+        <div class="area-e">e<span>第 3 行第 3 列</span></div>
+        <div class="area-f">f<span>第 4 行第 3 列</span></div>
+    </section>
+
+    <section class="code-note">
+        <h2>核心代码</h2>
+        <pre>.grid {
+    display: grid;
+    grid-template-areas:
+        'a b b'
+        'c d d'
+        'c d e'
+        'c d f';
+    grid-template-columns: 1.2fr 1fr 1fr;
+    grid-template-rows: 90px 90px 90px 90px;
+    gap: 14px;
+}
+.area-a { grid-area: a; }
+.area-b { grid-area: b; }
+/* ... 其余区域同理 */</pre>
+    </section>
+
+    <footer>孙家政 · 1001 · Grid 布局练习</footer>
+</body>
+</html>
