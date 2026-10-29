@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1001 孙家政 - Font Awesome 字体图标</title>
+    <link rel="stylesheet" href="cdn/css/all.min.css">
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f6fa;
+            padding: 20px;
+        }
+        h2 {
+            background-color: #0d6efd;
+            color: #fff;
+            text-align: center;
+            line-height: 200%;
+            letter-spacing: 3px;
+            font-size: 20px;
+            border-radius: 6px;
+        }
+        h3 {
+            font-size: 16px;
+            color: #0d6efd;
+            margin: 18px 0 10px;
+            padding-left: 8px;
+            border-left: 4px solid #0d6efd;
+        }
+        .icon-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .icon-item {
+            width: 110px;
+            padding: 14px 6px;
+            text-align: center;
+            background-color: #fff;
+            border: 1px solid #e3e6ee;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .icon-item:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+            transform: translateY(-4px);
+        }
+        .icon-item i {
+            display: block;
+            font-size: 30px;
+            color: #0d6efd;
+            line-height: 40px;
+        }
+        .icon-item span {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Font Awesome 字体图标（字体图标形式）</h2>
+    <p>学号：1001，姓名：孙家政，班级：计算机24010</p>
+
+    <h3>常用图标</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i class="fa-solid fa-house"></i><span>首页</span></div>
+        <div class="icon-item"><i class="fa-solid fa-user"></i><span>用户</span></div>
+        <div class="icon-item"><i class="fa-solid fa-gear"></i><span>设置</span></div>
+        <div class="icon-item"><i class="fa-solid fa-magnifying-glass"></i><span>搜索</span></div>
+        <div class="icon-item"><i class="fa-solid fa-heart"></i><span>喜欢</span></div>
+        <div class="icon-item"><i class="fa-solid fa-star"></i><span>收藏</span></div>
+        <div class="icon-item"><i class="fa-solid fa-bell"></i><span>通知</span></div>
+        <div class="icon-item"><i class="fa-solid fa-comment"></i><span>评论</span></div>
+        <div class="icon-item"><i class="fa-solid fa-download"></i><span>下载</span></div>
+        <div class="icon-item"><i class="fa-solid fa-trash"></i><span>删除</span></div>
+    </div>
+
+    <h3>实心 / 常规 / 品牌 三种样式</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i class="fa-solid fa-heart"></i><span>solid 实心</span></div>
+        <div class="icon-item"><i class="fa-regular fa-heart"></i><span>regular 常规</span></div>
+        <div class="icon-item"><i class="fa-brands fa-github"></i><span>GitHub</span></div>
+        <div class="icon-item"><i class="fa-brands fa-weixin"></i><span>微信</span></div>
+        <div class="icon-item"><i class="fa-brands fa-qq"></i><span>QQ</span></div>
+        <div class="icon-item"><i class="fa-brands fa-bilibili"></i><span>哔哩哔哩</span></div>
+    </div>
+
+    <h3>图标放大与动画</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i class="fa-solid fa-camera" style="font-size:16px;line-height:48px;"></i><span>默认 16px</span></div>
+        <div class="icon-item"><i class="fa-solid fa-camera fa-2x" style="font-size:16px;line-height:48px;"></i><span>fa-2x 放大2倍</span></div>
+        <div class="icon-item"><i class="fa-solid fa-camera fa-3x" style="font-size:16px;line-height:48px;"></i><span>fa-3x 放大3倍</span></div>
+        <div class="icon-item"><i class="fa-solid fa-spinner fa-spin fa-2x" style="font-size:16px;line-height:48px;"></i><span>fa-spin 旋转</span></div>
+        <div class="icon-item"><i class="fa-solid fa-rotate fa-spin fa-2x" style="font-size:16px;line-height:48px;"></i><span>旋转加载</span></div>
+        <div class="icon-item"><i class="fa-solid fa-heart fa-beat fa-2x" style="font-size:16px;line-height:48px;color:#e74c3c;"></i><span>fa-beat 心跳</span></div>
+    </div>
+</body>
+</html>

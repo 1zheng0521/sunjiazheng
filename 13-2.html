@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1001 孙家政 - Lucide SVG 图标</title>
+    <script src="cdn/lucide.min.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f5f6fa;
+            padding: 20px;
+        }
+        h2 {
+            background-color: #7c3aed;
+            color: #fff;
+            text-align: center;
+            line-height: 200%;
+            letter-spacing: 3px;
+            font-size: 20px;
+            border-radius: 6px;
+        }
+        h3 {
+            font-size: 16px;
+            color: #7c3aed;
+            margin: 18px 0 10px;
+            padding-left: 8px;
+            border-left: 4px solid #7c3aed;
+        }
+        .icon-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .icon-item {
+            width: 110px;
+            padding: 14px 6px;
+            text-align: center;
+            background-color: #fff;
+            border: 1px solid #e3e6ee;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+        .icon-item:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+            transform: translateY(-4px);
+        }
+        .icon-item svg {
+            display: block;
+            margin: 0 auto;
+            color: #7c3aed;
+        }
+        .icon-item span {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Lucide 图标（SVG 形式）</h2>
+    <p>学号：1001，姓名：孙家政，班级：计算机24010</p>
+
+    <h3>常用图标</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i data-lucide="house"></i><span>首页</span></div>
+        <div class="icon-item"><i data-lucide="user"></i><span>用户</span></div>
+        <div class="icon-item"><i data-lucide="settings"></i><span>设置</span></div>
+        <div class="icon-item"><i data-lucide="search"></i><span>搜索</span></div>
+        <div class="icon-item"><i data-lucide="heart"></i><span>喜欢</span></div>
+        <div class="icon-item"><i data-lucide="star"></i><span>收藏</span></div>
+        <div class="icon-item"><i data-lucide="bell"></i><span>通知</span></div>
+        <div class="icon-item"><i data-lucide="message-circle"></i><span>评论</span></div>
+        <div class="icon-item"><i data-lucide="download"></i><span>下载</span></div>
+        <div class="icon-item"><i data-lucide="trash-2"></i><span>删除</span></div>
+    </div>
+
+    <h3>SVG 尺寸由 width / height 属性控制</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i data-lucide="camera" width="20" height="20"></i><span>20 x 20</span></div>
+        <div class="icon-item"><i data-lucide="camera" width="32" height="32"></i><span>32 x 32</span></div>
+        <div class="icon-item"><i data-lucide="camera" width="48" height="48"></i><span>48 x 48</span></div>
+    </div>
+
+    <h3>颜色与描边</h3>
+    <div class="icon-list">
+        <div class="icon-item"><i data-lucide="heart" width="36" height="36" style="color:#e74c3c;"></i><span>填充颜色</span></div>
+        <div class="icon-item"><i data-lucide="heart" width="36" height="36" style="color:#e74c3c;fill:#e74c3c;"></i><span>实心效果</span></div>
+        <div class="icon-item"><i data-lucide="circle" width="36" height="36" stroke-width="1"></i><span>stroke=1</span></div>
+        <div class="icon-item"><i data-lucide="circle" width="36" height="36" stroke-width="4"></i><span>stroke=4</span></div>
+        <div class="icon-item"><i data-lucide="github" width="36" height="36"></i><span>GitHub</span></div>
+        <div class="icon-item"><i data-lucide="loader" width="36" height="36"></i><span>loader</span></div>
+    </div>
+
+    <h3>用 JavaScript 动态生成 SVG 图标</h3>
+    <div class="icon-list" id="js-icons"></div>
+    <p style="margin-top:10px;font-size:12px;color:#888;">说明：<code>&lt;i data-lucide="名字"&gt;&lt;/i&gt;</code> 经 lucide.createIcons() 后会被替换为真实的 <code>&lt;svg&gt;</code> 元素。</p>
+
+    <script>
+        var names = ["thumbs-up", "bookmark", "share-2", "send", "shield-check", "clock", "image", "music", "wifi", "battery-full"];
+        var cn = ["点赞", "书签", "分享", "发送", "安全", "时间", "图片", "音乐", "无线", "电量"];
+        var box = document.getElementById("js-icons");
+        for (var i = 0; i < names.length; i++) {
+            box.insertAdjacentHTML("beforeend",
+                '<div class="icon-item"><i data-lucide="' + names[i] + '"></i><span>' + cn[i] + '</span></div>');
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>

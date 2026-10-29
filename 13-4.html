@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1296db">
+    <title>1001 孙家政 - SVG 图标下导航</title>
+    <!-- iconfont 的 symbol 模式：加载后会自动向页面注入 <svg><symbol>...</symbol></svg> -->
+    <script src="font/font_5244893_06a326scu1lo/iconfont.js"></script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        html,
+        body {
+            width: 100%;
+        }
+        body {
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            background-color: #f4f5f7;
+            color: #333;
+            font-size: 14px;
+        }
+
+        /* SVG 图标通用样式：用字体大小控制图标尺寸，用 color 控制颜色 */
+        .icon {
+            width: 1em;
+            height: 1em;
+            vertical-align: -0.15em;
+            fill: currentColor;   /* 关键：让 SVG 跟随文字颜色 */
+            overflow: hidden;
+        }
+
+        /* ============ 顶部标题 ============ */
+        .page-header {
+            background-color: #1296db;
+            color: #fff;
+            text-align: center;
+            line-height: 1.9;
+            padding: 8px 10px;
+            font-size: 17px;
+            letter-spacing: 2px;
+        }
+        .page-header p {
+            font-size: 12px;
+            letter-spacing: 0;
+            opacity: 0.9;
+        }
+
+        /* ============ 页面内容（底部留出导航高度） ============ */
+        .page-content {
+            padding: 14px 12px;
+            /* 为固定下导航预留空间，避免内容被遮挡 */
+            padding-bottom: calc(72px + env(safe-area-inset-bottom));
+        }
+        .tip {
+            background-color: #fff;
+            border-left: 4px solid #1296db;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 180%;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+        }
+        .card h3 {
+            font-size: 15px;
+            color: #1296db;
+            margin-bottom: 8px;
+        }
+        .card p {
+            font-size: 13px;
+            color: #888;
+            line-height: 170%;
+        }
+        .icon-row {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 12px;
+        }
+        .icon-row span {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+        }
+        .icon-row .icon {
+            display: block;
+            font-size: 26px;
+            line-height: 34px;
+            margin: 0 auto 2px;
+            color: #1296db;
+        }
+
+        /* ============ 固定下导航：全屏宽度 + 自适应 ============ */
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            display: flex;                 /* 四项等分，宽度自适应 */
+            background-color: #fff;
+            border-top: 1px solid #e6e8eb;
+            box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+            /* 适配 iPhone 底部安全区域 */
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 999;
+        }
+        .nav-item {
+            position: relative;            /* 作为红点定位的参照 */
+            flex: 1;                       /* 四项平分屏幕宽度 */
+            min-width: 0;
+            padding: 7px 2px 6px;
+            text-align: center;
+            text-decoration: none;
+            color: #9aa0a6;                /* 默认（未选中）颜色 */
+        }
+        .nav-icon {
+            position: relative;            /* 作为数字徽章定位的参照 */
+            display: inline-block;
+            height: 24px;
+            font-size: 22px;               /* 控制 SVG 图标大小（1em） */
+        }
+        .nav-label {
+            display: block;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        /* ---------- 数字徽章（右上角显示数量） ---------- */
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -14px;
+            min-width: 16px;
+            height: 16px;
+            padding: 0 4px;
+            background-color: #ff3b30;
+            color: #fff;
+            font-size: 10px;
+            font-style: normal;
+            line-height: 16px;
+            text-align: center;
+            border-radius: 8px;
+            border: 1px solid #fff;
+        }
+
+        /* ---------- 右上角红点（未读提示） ---------- */
+        .dot {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            background-color: #ff3b30;
+            border-radius: 50%;
+            border: 1px solid #fff;
+        }
+
+        /* 选中态 */
+        .nav-item.active {
+            color: #1296db;
+        }
+        .nav-item.active .nav-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        移动端固定下导航（SVG 图标）
+        <p>学号：1001 &nbsp;姓名：孙家政 &nbsp;班级：计算机24010</p>
+    </div>
+
+    <div class="page-content">
+        <div class="tip">
+            本页下导航采用 <b>iconfont 的 SVG 图标</b> 实现，使用
+            <code>&lt;svg&gt;&lt;use xlink:href="#icon-xxx"&gt;&lt;/use&gt;&lt;/svg&gt;</code> 引用 symbol 符号。<br>
+            导航固定底部、全屏宽度，4 个导航项用 <code>flex: 1</code> 自适应平分宽度；<br>
+            每个导航项均包含：<b>数字徽章</b>（显示数量）和<b>右上角红点</b>（未读提示）。
+        </div>
+
+        <div class="card">
+            <h3>图标预览</h3>
+            <p>font 目录下 iconfont 图标库中的部分图标（SVG 形式，放大不失真）。</p>
+            <div class="icon-row">
+                <div>
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-shouye"></use></svg>
+                    <span>首页</span>
+                </div>
+                <div>
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-sousuo"></use></svg>
+                    <span>搜索</span>
+                </div>
+                <div>
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-pinglun"></use></svg>
+                    <span>评论</span>
+                </div>
+                <div>
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-gerenzhongxin"></use></svg>
+                    <span>个人中心</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>说明</h3>
+            <p>向上滚动页面可以看到：下导航始终固定在屏幕底部，不管页面内容多长都不会随页面滚动。</p>
+        </div>
+
+        <div class="card">
+            <h3>自适应宽度</h3>
+            <p>导航整体宽度为 100%（全屏宽度），4 个导航项各占 1/4，在 320px ~ 768px 等不同宽度的移动设备上自动适配。</p>
+        </div>
+
+        <div class="card">
+            <h3>数字徽章</h3>
+            <p>使用绝对定位放在图标的右上角，超过 99 显示为 99+。</p>
+        </div>
+
+        <div class="card">
+            <h3>右上角红点</h3>
+            <p>使用绝对定位放在导航项的右上角，用于提示有未读消息。</p>
+        </div>
+    </div>
+
+    <!-- ================= 固定下导航 ================= -->
+    <nav class="bottom-nav">
+        <a href="#" class="nav-item active">
+            <span class="nav-icon">
+                <svg class="icon" aria-hidden="true"><use xlink:href="#icon-shouye"></use></svg>
+                <em class="badge">6</em>           <!-- 数字徽章 -->
+            </span>
+            <span class="nav-label">首页</span>
+            <i class="dot"></i>                     <!-- 右上角红点 -->
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">
+                <svg class="icon" aria-hidden="true"><use xlink:href="#icon-sousuo"></use></svg>
+                <em class="badge">99+</em>
+            </span>
+            <span class="nav-label">搜索</span>
+            <i class="dot"></i>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">
+                <svg class="icon" aria-hidden="true"><use xlink:href="#icon-pinglun"></use></svg>
+                <em class="badge">12</em>
+            </span>
+            <span class="nav-label">消息</span>
+            <i class="dot"></i>
+        </a>
+        <a href="#" class="nav-item">
+            <span class="nav-icon">
+                <svg class="icon" aria-hidden="true"><use xlink:href="#icon-gerenzhongxin"></use></svg>
+                <em class="badge">3</em>
+            </span>
+            <span class="nav-label">我的</span>
+            <i class="dot"></i>
+        </a>
+    </nav>
+</body>
+</html>
