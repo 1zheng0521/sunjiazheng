@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>16-4 新闻排行榜 - 孙家政</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "SimSun", sans-serif;
+            background: #f4f6fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ============ 排行组件 ============ */
+        .rank-widget {
+            width: 386px;
+            max-width: 100%;
+            background: #fff;
+            border: 1px solid #dde5f0;
+            box-shadow: 0 2px 12px rgba(30, 60, 120, .07);
+            overflow: hidden;
+        }
+
+        /* ---- 选项卡 ---- */
+        .tabs {
+            display: flex;
+            height: 46px;
+            border-bottom: 1px solid #e6edf7;
+        }
+        .tab {
+            flex: 1;
+            position: relative;
+            border: none;
+            background: #dbe7f7;
+            color: #33445c;
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background .18s, color .18s;
+            outline: none;
+        }
+        .tab + .tab { border-left: 1px solid #eef3fa; }
+        .tab:hover { background: #cfdff5; }
+        .tab.active {
+            background: #fff;
+            color: #1a1a1a;
+            font-weight: bold;
+        }
+        .tab.active::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: #4a90e2;
+        }
+
+        /* ---- 列表 ---- */
+        .rank-list { list-style: none; }
+        .rank-item {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            height: 41px;
+            padding: 0 13px 0 11px;
+            border-bottom: 1px dashed #e6ecf6;
+            cursor: pointer;
+            position: relative;
+            transition: background .15s;
+            animation: fadeIn .28s ease both;
+        }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-item:hover { background: #f3f9ff; }
+        .rank-item:hover .title { color: #1a6fc4; text-decoration: underline; }
+        .rank-item.active { background: #eaf4ff; }
+        .rank-item.active::after {
+            content: "";
+            position: absolute;
+            left: 0; top: 6px; bottom: 6px;
+            width: 3px;
+            background: #4a90e2;
+            border-radius: 0 3px 3px 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .num {
+            width: 22px;
+            flex-shrink: 0;
+            text-align: center;
+            color: #2b7fd4;
+            font-size: 15px;
+            font-family: Arial, Helvetica, sans-serif;
+            line-height: 1;
+        }
+        .title {
+            flex: 1;
+            font-size: 14px;
+            color: #2b2b2b;
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color .15s;
+            text-decoration: none;
+            cursor: pointer;
+            display: block;
+        }
+        .title:active { color: #0f4f96; }
+        .count {
+            flex-shrink: 0;
+            color: #e5504a;
+            font-size: 14px;
+            font-family: Arial, Helvetica, sans-serif;
+            letter-spacing: .3px;
+        }
+
+        /* ============ 轻提示 ============ */
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 48px;
+            transform: translate(-50%, 16px);
+            background: rgba(24, 38, 68, .9);
+            color: #fff;
+            font-size: 13px;
+            padding: 9px 20px;
+            border-radius: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .25s, transform .25s;
+            white-space: nowrap;
+            max-width: 90vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        .page-tip {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #a3adbd;
+        }
+        .page-tip b { color: #6d7a90; font-weight: normal; }
+    </style>
+</head>
+<body>
+    <div class="rank-widget">
+        <div class="tabs" id="tabs">
+            <button class="tab active" data-type="click">点击排行</button>
+            <button class="tab" data-type="comment">评论排行</button>
+        </div>
+        <ul class="rank-list" id="rankList"></ul>
+    </div>
+
+    <p class="page-tip">16-4 新闻排行榜组件 · <b>徐奔</b> · 点击标题直接用百度搜索</p>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        /* ---------- 数据 ---------- */
+        var data = {
+            click: [
+                { t: '中国各城市房子还要卖多少年(详细数据)', c: 187706 },
+                { t: '任志强：60多年来 我不知道国企给了我们', c: 171180 },
+                { t: '三精制药跳楼老总被查因华润商贿案 省食', c: 127631 },
+                { t: '内地17省铺开不动产统一登记职责整合工作', c: 113865 },
+                { t: '山西煤老板抛售整栋99套二手房 8年投资翻', c: 72770 },
+                { t: '北京城南楼市“沦陷” 变相降价措施加码', c: 62971 },
+                { t: '中国3d打印技术取得重大突破 近1200人连', c: 27456 },
+                { t: '重磅利空突至致全球暴跌 A股或黑周五无悬', c: 25322 },
+                { t: '七匹狼早盘上演奇葩一幕：单笔4手卖单刷', c: 20912 },
+                { t: '长油小股东主导股东大 当场曝料董事长', c: 11667 }
+            ],
+            comment: [
+                { t: '任志强：60多年来 我不知道国企给了我们', c: 8942 },
+                { t: '中国各城市房子还要卖多少年(详细数据)', c: 7620 },
+                { t: '北京城南楼市“沦陷” 变相降价措施加码', c: 6413 },
+                { t: '三精制药跳楼老总被查因华润商贿案 省食', c: 5388 },
+                { t: '山西煤老板抛售整栋99套二手房 8年投资翻', c: 4105 },
+                { t: '重磅利空突至致全球暴跌 A股或黑周五无悬', c: 3762 },
+                { t: '内地17省铺开不动产统一登记职责整合工作', c: 2954 },
+                { t: '七匹狼早盘上演奇葩一幕：单笔4手卖单刷', c: 2308 },
+                { t: '中国3d打印技术突破 近1200人连线围观', c: 1874 },
+                { t: '长油小股东主导股东大 当场曝料董事长', c: 1206 }
+            ]
+        };
+
+        var rankList = document.getElementById('rankList');
+        var tabs = document.getElementById('tabs');
+        var toastEl = document.getElementById('toast');
+        var toastTimer = null;
+        var currentType = 'click';
+
+        /* ---------- 渲染列表 ---------- */
+        function render(type) {
+            currentType = type;
+            rankList.innerHTML = '';
+
+            data[type].forEach(function (item, i) {
+                var li = document.createElement('li');
+                li.className = 'rank-item';
+                li.style.animationDelay = (i * 0.025) + 's';
+
+                var num = document.createElement('span');
+                num.className = 'num';
+                num.textContent = i + 1;
+
+                // 标题做成链接：点击后在新标签页搜索相关新闻
+                var title = document.createElement('a');
+                title.className = 'title';
+                title.href = 'https://www.baidu.com/s?wd=' + encodeURIComponent(item.t);
+                title.target = '_blank';
+                title.rel = 'noopener noreferrer';
+                title.title = '百度搜索：' + item.t;
+                title.textContent = item.t;
+                title.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var items = rankList.querySelectorAll('.rank-item');
+                    for (var k = 0; k < items.length; k++) items[k].classList.remove('active');
+                    li.classList.add('active');
+                    showToast('正在百度搜索：' + item.t);
+                });
+
+                var count = document.createElement('span');
+                count.className = 'count';
+                count.textContent = item.c;
+
+                li.appendChild(num);
+                li.appendChild(title);
+                li.appendChild(count);
+
+                li.addEventListener('click', function () {
+                    var items = rankList.querySelectorAll('.rank-item');
+                    for (var k = 0; k < items.length; k++) items[k].classList.remove('active');
+                    li.classList.add('active');
+                    showToast('第 ' + (i + 1) + ' 条 · ' +
+                        (type === 'click' ? '点击 ' : '评论 ') + item.c + ' 次 · ' + item.t);
+                });
+
+                rankList.appendChild(li);
+            });
+        }
+
+        /* ---------- 轻提示 ---------- */
+        function showToast(text) {
+            toastEl.textContent = text;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () {
+                toastEl.classList.remove('show');
+            }, 2200);
+        }
+
+        /* ---------- 选项卡切换 ---------- */
+        tabs.addEventListener('click', function (e) {
+            var btn = e.target.closest('.tab');
+            if (!btn || btn.classList.contains('active')) return;
+
+            var all = tabs.querySelectorAll('.tab');
+            for (var i = 0; i < all.length; i++) all[i].classList.remove('active');
+            btn.classList.add('active');
+
+            render(btn.dataset.type);
+            showToast(btn.textContent + '　已切换');
+        });
+
+        /* ---------- 初始化 ---------- */
+        render('click');
+    </script>
+</body>
+</html>
