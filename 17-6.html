@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>包饺子异步流程演示</title>
+<style>
+  body {
+    font-family: "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #fff5f5, #ffe0e0);
+    margin: 0;
+    padding: 30px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    color: #c0392b;
+    margin-bottom: 30px;
+  }
+  .container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.1);
+    padding: 30px;
+  }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    font-size: 18px;
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .2s;
+  }
+  .btn:hover { background: #c0392b; }
+  .btn:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+  .flow {
+    margin-top: 25px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    border-left: 5px solid #dee2e6;
+    opacity: .5;
+    transition: all .3s;
+  }
+  .step.active {
+    opacity: 1;
+    border-left-color: #f39c12;
+    background: #fff8e1;
+  }
+  .step.done {
+    opacity: 1;
+    border-left-color: #27ae60;
+    background: #eafaf1;
+  }
+  .step .icon {
+    font-size: 24px;
+    margin-right: 14px;
+  }
+  .step .info { flex: 1; }
+  .step .title { font-weight: bold; color: #2c3e50; }
+  .step .desc { font-size: 13px; color: #7f8c8d; margin-top: 2px; }
+  .step .status {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: #ecf0f1;
+    color: #7f8c8d;
+  }
+  .step.active .status { background: #fdebd0; color: #ca6f1e; }
+  .step.done  .status { background: #d5f5e3; color: #1e8449; }
+
+  .time {
+    margin-top: 20px;
+    text-align: center;
+    color: #c0392b;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+  <h1>🥟 包饺子异步流程演示</h1>
+  <div class="container">
+    <button id="startBtn" class="btn">开始包饺子 🚀</button>
+
+    <div class="flow" id="flow">
+      <!-- 步骤列表，JS 动态标记状态 -->
+      <div class="step" data-step="buy-online">
+        <span class="icon">📱</span>
+        <div class="info">
+          <div class="title">线上买原料</div>
+          <div class="desc">网购，预计 6s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="buy-offline">
+        <span class="icon">🏪</span>
+        <div class="info">
+          <div class="title">线下买原料</div>
+          <div class="desc">菜市场，预计 6s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="pick">
+        <span class="icon">🛒</span>
+        <div class="info">
+          <div class="title">取原料</div>
+          <div class="desc">从先完成的渠道取货，3s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="dough">
+        <span class="icon">🫓</span>
+        <div class="info">
+          <div class="title">和面</div>
+          <div class="desc">并行执行，4s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="filling">
+        <span class="icon">🥕</span>
+        <div class="info">
+          <div class="title">和馅</div>
+          <div class="desc">并行执行，5s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="wrap">
+        <span class="icon">🥟</span>
+        <div class="info">
+          <div class="title">包饺子</div>
+          <div class="desc">和面和和馅都好后进行，8s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+      <div class="step" data-step="eat">
+        <span class="icon">😋</span>
+        <div class="info">
+          <div class="title">吃饺子</div>
+          <div class="desc">开动！2s</div>
+        </div>
+        <span class="status">等待中</span>
+      </div>
+    </div>
+
+    <div class="time" id="timeBox"></div>
+  </div>
+
+<script>
+  // ============ 工具函数 ============
+  // 用 setTimeout 包装成 Promise：在指定时间后 resolve，并回传耗时
+  function delay(ms, label) {
+    return new Promise(resolve => {
+      setTimeout(() => resolve({ label, ms }), ms);
+    });
+  }
+
+  // 设置某个步骤的状态（等待中 / 进行中 / 已完成）
+  function setStep(name, state, text) {
+    const el = document.querySelector(`.step[data-step="${name}"]`);
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    if (state === 'active') el.classList.add('active');
+    if (state === 'done')   el.classList.add('done');
+    el.querySelector('.status').textContent = text;
+  }
+
+  // 给步骤绑定通用的 start/done 状态切换
+  function markStep(name) {
+    setStep(name, 'active', '进行中...');
+  }
+
+  // ============ 各个异步任务（每个都返回 Promise） ============
+
+  // 1. 线上买原料：6s
+  function buyOnline() {
+    markStep('buy-online');
+    return delay(6000, '线上').then(r => {
+      setStep('buy-online', 'done', '已完成 (6s)');
+      return r;
+    });
+  }
+
+  // 2. 线下买原料：6s（加一点随机抖动，模拟现实）
+  function buyOffline() {
+    markStep('buy-offline');
+    const ms = 5500 + Math.random() * 1000; // 5.5~6.5s
+    return delay(ms, '线下').then(r => {
+      setStep('buy-offline', 'done', `已完成 (${(ms/1000).toFixed(1)}s)`);
+      return r;
+    });
+  }
+
+  // 3. 取原料：3s
+  function pickMaterial(winner) {
+    markStep('pick');
+    return delay(3000, '取原料').then(() => {
+      setStep('pick', 'done', `已完成 (来自${winner.label}, 3s)`);
+    });
+  }
+
+  // 4. 和面：4s
+  function makeDough() {
+    markStep('dough');
+    return delay(4000, '和面').then(() => {
+      setStep('dough', 'done', '已完成 (4s)');
+    });
+  }
+
+  // 5. 和馅：5s
+  function makeFilling() {
+    markStep('filling');
+    return delay(5000, '和馅').then(() => {
+      setStep('filling', 'done', '已完成 (5s)');
+    });
+  }
+
+  // 6. 包饺子：8s
+  function wrapDumplings() {
+    markStep('wrap');
+    return delay(8000, '包饺子').then(() => {
+      setStep('wrap', 'done', '已完成 (8s)');
+    });
+  }
+
+  // 7. 吃饺子：2s
+  function eatDumplings() {
+    markStep('eat');
+    return delay(2000, '吃饺子').then(() => {
+      setStep('eat', 'done', '已完成 (2s) 🎉');
+    });
+  }
+
+  // ============ 主流程：async/await 串联 ============
+  async function makeDumplings() {
+    const timeBox = document.getElementById('timeBox');
+    const startBtn = document.getElementById('startBtn');
+    startBtn.disabled = true;
+
+    const start = Date.now();
+    timeBox.textContent = '⏳ 流程开始...';
+
+    try {
+      // 第 ① 阶段：线上 & 线下 同时买原料，谁先完成就用谁（Promise.race）
+      timeBox.textContent = '① 正在同时发起线上和线下购买...';
+      const buyerWinner = await Promise.race([buyOnline(), buyOffline()]);
+      timeBox.textContent = `① 最快的是「${buyerWinner.label}」，准备取货`;
+
+      // 第 ② 阶段：取原料
+      await pickMaterial(buyerWinner);
+      timeBox.textContent = '② 原料已取，开始和面 & 和馅...';
+
+      // 第 ③ 阶段：和面 + 和馅 并行，两个都完成才能继续（Promise.all）
+      await Promise.all([makeDough(), makeFilling()]);
+      timeBox.textContent = '③ 和面和馅都完成，开始包饺子...';
+
+      // 第 ④ 阶段：包饺子
+      await wrapDumplings();
+      timeBox.textContent = '④ 饺子包好了，下锅煮熟...';
+
+      // 第 ⑤ 阶段：吃饺子
+      await eatDumplings();
+
+      const total = ((Date.now() - start) / 1000).toFixed(1);
+      timeBox.textContent = `✅ 全部完成！总耗时约 ${total}s`;
+    } catch (err) {
+      timeBox.textContent = '❌ 流程出错：' + err.message;
+    } finally {
+      startBtn.disabled = false;
+      startBtn.textContent = '再来一局 🔄';
+    }
+  }
+
+  // ============ 绑定按钮 ============
+  document.getElementById('startBtn').addEventListener('click', () => {
+    // 重置所有步骤
+    document.querySelectorAll('.step').forEach(el => {
+      el.classList.remove('active', 'done');
+      el.querySelector('.status').textContent = '等待中';
+    });
+    document.getElementById('timeBox').textContent = '';
+    makeDumplings();
+  });
+</script>
+</body>
+</html>
