@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>18-2 Canvas 电商系统架构图</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #eaf0ff;
+      background: #090d18;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -10%, rgba(42, 75, 130, .24), transparent 58%),
+        #090d18;
+    }
+
+    .page { width: min(1440px, 100%); margin: 0 auto; padding: 34px clamp(14px, 3vw, 38px) 28px; }
+
+    .topline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      color: #8ca7db;
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .19em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 8px 0 8px; font-size: clamp(24px, 4vw, 38px); letter-spacing: .03em; }
+    .intro { max-width: 740px; margin: 0; color: #97a5c1; font-size: 14px; line-height: 1.8; }
+    .toolbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 9px; }
+
+    button {
+      min-height: 40px;
+      padding: 0 14px;
+      border: 1px solid #2c3a57;
+      border-radius: 8px;
+      background: #111a2b;
+      color: #e5edff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #77a7ff; background: #17243a; }
+    button:focus-visible { outline: 2px solid #77a7ff; outline-offset: 2px; }
+
+    .diagram-shell {
+      overflow: hidden;
+      border: 1px solid #23304a;
+      border-radius: 16px;
+      background: #0c1220;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
+    }
+
+    canvas { display: block; width: 100%; height: 940px; touch-action: manipulation; }
+
+    .diagram-footer {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 18px;
+      border-top: 1px solid #202b42;
+      color: #8492ad;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 12px 18px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .swatch { width: 9px; height: 9px; border-radius: 3px; background: var(--swatch); }
+    #details { max-width: 540px; margin: 0; text-align: right; }
+    #details strong { color: #dce7ff; }
+
+    @media (max-width: 760px) {
+      .page { padding-top: 24px; }
+      .topline { flex-direction: column; }
+      .toolbar { justify-content: flex-start; }
+      canvas { height: 1320px; }
+      .diagram-footer { flex-direction: column; }
+      #details { max-width: none; text-align: left; }
+    }
+
+    @media (min-width: 761px) and (max-width: 1050px) {
+      canvas { height: 1060px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topline">
+      <div>
+        <div class="eyebrow">18-2 · Canvas System Map</div>
+        <h1>电商全站系统架构</h1>
+        <p class="intro">从用户访问入口到业务服务、数据平台与外部履约系统，观察一次电商请求如何穿过各个系统层。悬停或点击组件可查看说明。</p>
+      </div>
+      <div class="toolbar">
+        <button id="toggle-flow" type="button" aria-pressed="false">暂停数据流</button>
+        <button id="reset-view" type="button">重置视图</button>
+      </div>
+    </header>
+
+    <section class="diagram-shell" aria-label="交互式电商系统架构图">
+      <canvas id="architecture" role="img" aria-label="电商系统架构图：用户终端依次访问边缘网络、API 网关、业务服务、平台中间件、数据存储和外部履约系统。"></canvas>
+      <footer class="diagram-footer">
+        <div class="legend" aria-label="架构层级图例">
+          <span class="legend-item"><i class="swatch" style="--swatch:#63a6ff"></i>访问与流量</span>
+          <span class="legend-item"><i class="swatch" style="--swatch:#a88bff"></i>业务服务</span>
+          <span class="legend-item"><i class="swatch" style="--swatch:#34d3b1"></i>平台中间件</span>
+          <span class="legend-item"><i class="swatch" style="--swatch:#f2b45f"></i>数据与外部系统</span>
+        </div>
+        <p id="details" aria-live="polite">选择一个模块查看职责说明。连线上的光点表示请求或事件流向。</p>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector("#architecture");
+      const context = canvas.getContext("2d");
+      const details = document.querySelector("#details");
+      const toggle = document.querySelector("#toggle-flow");
+      const reset = document.querySelector("#reset-view");
+      const colors = {
+        access: "#63a6ff",
+        service: "#a88bff",
+        platform: "#34d3b1",
+        data: "#f2b45f"
+      };
+      const nodeInfo = [
+        ["browser", "Web / H5 商城", "浏览器 · 移动网页", "access", "Web / H5 商城：浏览商品、购物车结算并查询订单。"],
+        ["app", "移动 App", "iOS · Android", "access", "移动 App：面向移动用户的商城入口，复用统一业务 API。"],
+        ["admin", "运营管理端", "内部运营工作台", "access", "运营管理端：管理商品、库存、促销活动与订单。"],
+        ["cdn", "CDN 加速", "静态资源 · 热点缓存", "access", "CDN：缓存静态资源和热点内容，降低源站延迟。"],
+        ["waf", "安全防护与负载均衡", "WAF · TLS · 流量分发", "access", "WAF 与负载均衡：过滤常见恶意流量，并将请求分发到可用服务。"],
+        ["gateway", "API 网关", "鉴权 · 限流 · 路由", "access", "API 网关：统一鉴权、限流、路由、日志与 API 版本管理。"],
+        ["identity", "用户与身份", "账号 · 会员 · 权限", "service", "用户与身份：账号资料、登录态、会员信息和访问授权。"],
+        ["catalog", "商品与搜索", "目录 · 详情 · 检索", "service", "商品与搜索：商品目录、详情、分类和检索服务。"],
+        ["cart", "购物车", "选品 · 数量 · 临时状态", "service", "购物车：维护用户选购商品、数量与临时状态。"],
+        ["order", "订单中心", "创建 · 状态 · 售后", "service", "订单中心：订单创建、状态流转、取消与售后流程。"],
+        ["payment", "支付服务", "支付单 · 回调 · 对账", "service", "支付服务：管理支付单、支付状态回调与对账。"],
+        ["inventory", "库存与促销", "扣减 · 价格 · 优惠券", "service", "库存与促销：库存扣减、价格、优惠券和活动规则。"],
+        ["cache", "缓存 Redis", "会话 · 热点 · 购物车", "platform", "Redis 缓存：承载会话、热点数据、购物车和短期状态。"],
+        ["queue", "消息队列", "订单事件 · 异步任务", "platform", "消息队列：解耦订单、支付、库存和通知等异步事件。"],
+        ["search", "搜索索引", "商品索引 · 筛选", "platform", "搜索索引：维护商品索引，支持关键词检索与筛选。"],
+        ["userdb", "用户库", "MySQL / PostgreSQL", "data", "用户数据库：保存用户、会员与账户相关的持久化数据。"],
+        ["productdb", "商品与库存库", "关系数据库", "data", "商品数据库：保存商品目录、价格及库存记录。"],
+        ["orderdb", "订单与支付库", "关系数据库", "data", "订单数据库：保存订单、支付流水和履约状态。"],
+        ["warehouse", "仓储与物流", "库存履约 · 配送状态", "data", "仓储与物流：接收出库任务，回传物流单号和配送状态。"],
+        ["paymentExt", "第三方支付", "收银台 · 退款 · 通知", "data", "第三方支付：承接外部收银台、支付通知与退款请求。"],
+        ["messageExt", "短信与通知", "短信 · 邮件 · 站内信", "data", "通知服务：发送短信、邮件或站内消息。"]
+      ];
+      const connectionPairs = [
+        ["browser", "cdn"], ["app", "cdn"], ["admin", "waf"],
+        ["cdn", "waf"], ["waf", "gateway"],
+        ["gateway", "identity"], ["gateway", "catalog"], ["gateway", "cart"],
+        ["gateway", "order"], ["gateway", "payment"], ["gateway", "inventory"],
+        ["identity", "cache"], ["catalog", "cache"], ["catalog", "search"],
+        ["cart", "cache"], ["order", "queue"], ["order", "orderdb"],
+        ["payment", "orderdb"], ["payment", "paymentExt"],
+        ["inventory", "productdb"], ["inventory", "queue"],
+        ["identity", "userdb"], ["catalog", "productdb"],
+        ["queue", "warehouse"], ["queue", "messageExt"]
+      ];
+      const infoById = new Map(nodeInfo.map(([id, title, subtitle, type, description]) =>
+        [id, { id, title, subtitle, type, description }]));
+      let width = 0;
+      let height = 0;
+      let nodes = [];
+      let groups = [];
+      let links = [];
+      let hovered = null;
+      let selected = null;
+      let flowPaused = false;
+      let startedAt = performance.now();
+
+      function layout() {
+        const compact = width < 760;
+        const columns = compact ? 2 : 3;
+        const margin = compact ? 16 : 34;
+        const gap = compact ? 10 : 14;
+        const cardWidth = (width - margin * 2 - gap * (columns - 1)) / columns;
+        const cardHeight = compact ? 58 : 66;
+        const groupGap = compact ? 25 : 24;
+        const rows = [
+          { title: "01 访问终端", ids: ["browser", "app", "admin"] },
+          { title: "02 边缘网络与安全", ids: ["cdn", "waf"] },
+          { title: "03 统一接入层", ids: ["gateway"] },
+          { title: "04 核心业务服务", ids: ["identity", "catalog", "cart", "order", "payment", "inventory"] },
+          { title: "05 平台中间件", ids: ["cache", "queue", "search"] },
+          { title: "06 数据存储与外部系统", ids: ["userdb", "productdb", "orderdb", "warehouse", "paymentExt", "messageExt"] }
+        ];
+
+        nodes = [];
+        groups = [];
+        let y = 40;
+        for (const row of rows) {
+          const rowCount = Math.ceil(row.ids.length / columns);
+          const titleY = y;
+          const cardsY = y + 22;
+          row.ids.forEach((id, index) => {
+            const column = index % columns;
+            const line = Math.floor(index / columns);
+            nodes.push({
+              ...infoById.get(id),
+              x: margin + column * (cardWidth + gap),
+              y: cardsY + line * (cardHeight + 9),
+              width: cardWidth,
+              height: cardHeight
+            });
+          });
+          const bottomY = cardsY + rowCount * cardHeight + (rowCount - 1) * 9;
+          groups.push({ title: row.title, titleY, bottomY });
+          y = bottomY + groupGap;
+        }
+
+        height = y - groupGap + 12;
+        canvas.style.height = `${height}px`;
+        canvas.height = Math.round(height * Math.min(window.devicePixelRatio || 1, 2));
+        const nodesById = new Map(nodes.map((node) => [node.id, node]));
+        links = connectionPairs.map(([from, to], index) => ({
+          from: nodesById.get(from),
+          to: nodesById.get(to),
+          offset: index / connectionPairs.length
+        }));
+        draw(performance.now());
+      }
+
+      function drawGrid() {
+        context.strokeStyle = "rgba(125, 151, 196, .055)";
+        context.lineWidth = 1;
+        for (let x = 0; x < width; x += 24) {
+          context.beginPath();
+          context.moveTo(x, 0);
+          context.lineTo(x, height);
+          context.stroke();
+        }
+        for (let y = 0; y < height; y += 24) {
+          context.beginPath();
+          context.moveTo(0, y);
+          context.lineTo(width, y);
+          context.stroke();
+        }
+      }
+
+      function drawLink(link, time) {
+        const startX = link.from.x + link.from.width / 2;
+        const startY = link.from.y + link.from.height;
+        const endX = link.to.x + link.to.width / 2;
+        const endY = link.to.y;
+        const bend = Math.max(12, (endY - startY) * .48);
+        const color = colors[link.to.type];
+
+        context.beginPath();
+        context.moveTo(startX, startY);
+        context.bezierCurveTo(startX, startY + bend, endX, endY - bend, endX, endY);
+        context.strokeStyle = "rgba(115, 145, 195, .23)";
+        context.lineWidth = 1.2;
+        context.stroke();
+
+        if (flowPaused) return;
+        const progress = ((time - startedAt) / 2500 + link.offset) % 1;
+        const inverse = 1 - progress;
+        const pointX = inverse ** 3 * startX + 3 * inverse ** 2 * progress * startX
+          + 3 * inverse * progress ** 2 * endX + progress ** 3 * endX;
+        const pointY = inverse ** 3 * startY + 3 * inverse ** 2 * progress * (startY + bend)
+          + 3 * inverse * progress ** 2 * (endY - bend) + progress ** 3 * endY;
+        context.beginPath();
+        context.arc(pointX, pointY, 2.5, 0, Math.PI * 2);
+        context.fillStyle = color;
+        context.shadowColor = color;
+        context.shadowBlur = 9;
+        context.fill();
+        context.shadowBlur = 0;
+      }
+
+      function roundedRect(x, y, w, h, radius) {
+        context.beginPath();
+        context.roundRect(x, y, w, h, radius);
+      }
+
+      function drawNode(node) {
+        const active = node.id === hovered || node.id === selected;
+        const color = colors[node.type];
+        roundedRect(node.x, node.y, node.width, node.height, 9);
+        context.fillStyle = active ? "#18243a" : "#101a2b";
+        context.fill();
+        context.strokeStyle = active ? color : "rgba(91, 116, 158, .35)";
+        context.lineWidth = active ? 1.5 : 1;
+        context.stroke();
+
+        roundedRect(node.x + 10, node.y + 10, 3, node.height - 20, 2);
+        context.fillStyle = color;
+        context.fill();
+
+        const padding = 22;
+        const available = node.width - padding - 10;
+        let titleFont = node.width < 160 ? 12 : 14;
+        context.font = `600 ${titleFont}px "Microsoft YaHei", sans-serif`;
+        while (context.measureText(node.title).width > available && titleFont > 10) {
+          titleFont -= 1;
+          context.font = `600 ${titleFont}px "Microsoft YaHei", sans-serif`;
+        }
+        context.fillStyle = "#e7edff";
+        context.textBaseline = "alphabetic";
+        context.fillText(node.title, node.x + padding, node.y + 27);
+        context.font = `11px "Microsoft YaHei", sans-serif`;
+        context.fillStyle = "#91a0bc";
+        context.fillText(node.subtitle, node.x + padding, node.y + 46, available);
+      }
+
+      function draw(time) {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        context.clearRect(0, 0, width, height);
+        drawGrid();
+        drawGroupLabels();
+        for (const link of links) drawLink(link, time);
+        for (const node of nodes) drawNode(node);
+      }
+
+      function drawGroupLabels() {
+        context.font = '600 11px ui-monospace, Consolas, monospace';
+        context.textBaseline = "alphabetic";
+        for (const group of groups) {
+          context.fillStyle = "#8498bd";
+          context.fillText(group.title, 18, group.titleY + 12);
+          context.strokeStyle = "rgba(91, 116, 158, .16)";
+          context.lineWidth = 1;
+          context.beginPath();
+          context.moveTo(18, group.bottomY + 8);
+          context.lineTo(width - 18, group.bottomY + 8);
+          context.stroke();
+        }
+      }
+
+      function animate(time) {
+        requestAnimationFrame(animate);
+        if (!flowPaused) draw(time);
+      }
+
+      function resize() {
+        const bounds = canvas.getBoundingClientRect();
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        width = bounds.width;
+        canvas.width = Math.round(width * ratio);
+        layout();
+      }
+
+      function nodeAt(x, y) {
+        return nodes.find((node) =>
+          x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height) || null;
+      }
+
+      function showDetails(node) {
+        if (!node) {
+          details.textContent = "选择一个模块查看职责说明。连线上的光点表示请求或事件流向。";
+          return;
+        }
+        const title = document.createElement("strong");
+        title.textContent = node.title;
+        details.replaceChildren(title, document.createTextNode(` · ${node.description}`));
+      }
+
+      function pointerPosition(event) {
+        const rect = canvas.getBoundingClientRect();
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      }
+
+      canvas.addEventListener("pointermove", (event) => {
+        const point = pointerPosition(event);
+        hovered = nodeAt(point.x, point.y)?.id || null;
+        canvas.style.cursor = hovered ? "pointer" : "default";
+        showDetails(infoById.get(hovered || selected) || null);
+        if (flowPaused) draw(performance.now());
+      });
+
+      canvas.addEventListener("pointerleave", () => {
+        hovered = null;
+        canvas.style.cursor = "default";
+        showDetails(infoById.get(selected) || null);
+        if (flowPaused) draw(performance.now());
+      });
+
+      canvas.addEventListener("click", (event) => {
+        const point = pointerPosition(event);
+        selected = nodeAt(point.x, point.y)?.id || null;
+        showDetails(infoById.get(hovered || selected) || null);
+        if (flowPaused) draw(performance.now());
+      });
+
+      toggle.addEventListener("click", () => {
+        flowPaused = !flowPaused;
+        toggle.textContent = flowPaused ? "继续数据流" : "暂停数据流";
+        toggle.setAttribute("aria-pressed", String(flowPaused));
+        if (!flowPaused) startedAt = performance.now();
+        draw(performance.now());
+      });
+
+      reset.addEventListener("click", () => {
+        selected = null;
+        hovered = null;
+        startedAt = performance.now();
+        showDetails(null);
+        draw(performance.now());
+      });
+
+      window.addEventListener("resize", resize);
+      resize();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

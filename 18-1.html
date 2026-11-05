@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b18">
+  <title>18-1 Canvas 文字震颤动画</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      background: #080b18;
+      color: #eef2ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 45%, rgba(32, 52, 104, .34), transparent 55%),
+        #080b18;
+    }
+
+    .scene { position: relative; min-height: 100vh; isolation: isolate; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+    .overlay {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: clamp(24px, 5vw, 56px) 24px 30px;
+      pointer-events: none;
+      text-align: center;
+    }
+
+    .eyebrow {
+      color: #8ca3d8;
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 12px 0 0; font-size: clamp(22px, 4vw, 38px); letter-spacing: .12em; }
+    .hint { margin: 12px 0 0; color: #a7b2ce; font-size: 14px; }
+    .center-copy {
+      position: absolute;
+      top: calc(50% + var(--title-offset, 100px));
+      left: 50%;
+      width: 100%;
+      margin: 0;
+      transform: translateX(-50%);
+    }
+
+    .subtitle {
+      margin: 22px 0 0;
+      color: #9ba9cb;
+      font-size: clamp(14px, 2vw, 18px);
+      letter-spacing: .18em;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    button {
+      min-height: 42px;
+      padding: 0 18px;
+      border: 1px solid #354366;
+      border-radius: 999px;
+      background: rgba(17, 24, 45, .8);
+      color: #e6ecff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #8ba7ff; background: #182440; }
+    button:focus-visible { outline: 2px solid #8ba7ff; outline-offset: 3px; }
+    .caption { color: #7482a5; font-size: 12px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="scene">
+    <canvas id="canvas" role="img" aria-label="Canvas 动画：粒子背景中的 CANVAS 文字震颤与色彩错位"></canvas>
+    <div class="overlay">
+      <header>
+        <div class="eyebrow">18-1 · Canvas Motion Study</div>
+        <h1>粒子与文字的呼吸</h1>
+        <p class="hint">细看文字边缘，感受细微震颤与色彩错位</p>
+      </header>
+
+      <section class="center-copy" aria-label="Canvas 文字震颤动画">
+        <p class="subtitle">像素在呼吸 · 画布在生长</p>
+      </section>
+
+      <footer>
+        <div class="controls">
+          <button id="toggle" type="button" aria-pressed="false">暂停动画</button>
+          <span class="caption">原生 Canvas · 无外部依赖</span>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      const canvas = document.querySelector("#canvas");
+      const context = canvas.getContext("2d");
+      const toggle = document.querySelector("#toggle");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const particles = [];
+      let width = 0;
+      let height = 0;
+      let paused = reducedMotion.matches;
+      let lastTime = 0;
+      let fontSize = 100;
+
+      function updateToggle() {
+        toggle.textContent = paused ? "继续动画" : "暂停动画";
+        toggle.setAttribute("aria-pressed", String(paused));
+      }
+
+      function resize() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
+        fontSize = Math.min(168, Math.max(58, width * .14));
+        canvas.parentElement.style.setProperty("--title-offset", `${fontSize * .78}px`);
+        canvas.width = Math.round(width * ratio);
+        canvas.height = Math.round(height * ratio);
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+        const count = Math.min(110, Math.floor(width * height / 12500));
+        particles.length = 0;
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            radius: Math.random() * 1.8 + .5,
+            speed: Math.random() * .28 + .08,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+        draw(0);
+      }
+
+      function draw(time) {
+        context.clearRect(0, 0, width, height);
+        const drift = time * .00012;
+
+        for (const particle of particles) {
+          const shimmer = .28 + (Math.sin(drift + particle.phase) + 1) * .22;
+          context.beginPath();
+          context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+          context.fillStyle = `rgba(154, 188, 255, ${shimmer})`;
+          context.fill();
+          if (!paused) {
+            particle.y -= particle.speed;
+            particle.x += Math.sin(drift + particle.phase) * .12;
+            if (particle.y < -4) {
+              particle.y = height + 4;
+              particle.x = Math.random() * width;
+            }
+          }
+        }
+
+        const glow = context.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) * .48);
+        glow.addColorStop(0, "rgba(45, 70, 130, .08)");
+        glow.addColorStop(1, "rgba(8, 11, 24, 0)");
+        context.fillStyle = glow;
+        context.fillRect(0, 0, width, height);
+
+        drawTitle(time);
+      }
+
+      function drawTitle(time) {
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const beat = Math.sin(time * .0018) * 1.2;
+        const glitchPhase = time % 3400;
+        const glitch = glitchPhase > 3000 && glitchPhase < 3160
+          ? 1 - Math.abs(glitchPhase - 3080) / 80
+          : 0;
+
+        context.save();
+        context.font = `900 ${fontSize}px system-ui, sans-serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.shadowColor = "rgba(112, 145, 255, .45)";
+        context.shadowBlur = 30;
+        context.fillStyle = "#f5f7ff";
+        context.fillText("CANVAS", centerX + beat, centerY + beat * .5);
+        context.shadowBlur = 0;
+
+        if (glitch > 0) {
+          const textWidth = context.measureText("CANVAS").width;
+          context.save();
+          context.beginPath();
+          context.rect(centerX - textWidth / 2 - 8, centerY - fontSize * .34, textWidth + 16, fontSize * .16);
+          context.clip();
+          context.fillStyle = `rgba(112, 240, 223, ${.82 * glitch})`;
+          context.fillText("CANVAS", centerX - 7 * glitch, centerY);
+          context.restore();
+
+          context.save();
+          context.beginPath();
+          context.rect(centerX - textWidth / 2 - 8, centerY + fontSize * .18, textWidth + 16, fontSize * .15);
+          context.clip();
+          context.fillStyle = `rgba(255, 107, 155, ${.78 * glitch})`;
+          context.fillText("CANVAS", centerX + 6 * glitch, centerY);
+          context.restore();
+        }
+        context.restore();
+      }
+
+      function animate(time) {
+        requestAnimationFrame(animate);
+        if (paused || time - lastTime < 30) return;
+        lastTime = time;
+        draw(time);
+      }
+
+      toggle.addEventListener("click", () => {
+        paused = !paused;
+        updateToggle();
+        if (!paused) lastTime = 0;
+        draw(performance.now());
+      });
+
+      reducedMotion.addEventListener("change", (event) => {
+        paused = event.matches;
+        updateToggle();
+        draw(performance.now());
+      });
+
+      window.addEventListener("resize", resize);
+      updateToggle();
+      resize();
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>

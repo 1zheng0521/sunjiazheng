@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>18-7 Three.js 三维数据图表</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #eaf0ff;
+      background: #090d18;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -12%, rgba(52, 94, 143, .24), transparent 58%),
+        #090d18;
+    }
+
+    .page { width: min(1480px, 100%); margin: 0 auto; padding: 34px clamp(14px, 3vw, 40px) 42px; }
+    .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+    .eyebrow { color: #82b8c5; font: 600 12px/1.5 ui-monospace, Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 8px 0; font-size: clamp(25px, 4vw, 40px); letter-spacing: .025em; }
+    .intro { max-width: 850px; margin: 0; color: #9aa8c2; font-size: 14px; line-height: 1.8; }
+    .version { flex: 0 0 auto; padding: 9px 12px; border: 1px solid #2a4354; border-radius: 9px; color: #9ed8d2; font: 11px ui-monospace, Consolas, monospace; }
+
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .panel { min-width: 0; overflow: hidden; border: 1px solid #243149; border-radius: 15px; background: rgba(12, 18, 32, .94); box-shadow: 0 20px 60px rgba(0, 0, 0, .22); }
+    .panel-header { min-height: 98px; padding: 18px 20px 13px; border-bottom: 1px solid #202b42; }
+    .panel-index { color: #6f89aa; font: 600 10px ui-monospace, Consolas, monospace; letter-spacing: .13em; }
+    h2 { margin: 5px 0 4px; color: #dce7fa; font-size: 17px; }
+    .panel-description { margin: 0; color: #8593ac; font-size: 11px; line-height: 1.65; }
+
+    .scene { position: relative; height: 440px; background: radial-gradient(ellipse at 50% 50%, rgba(23, 40, 65, .56), transparent 67%); }
+    .scene canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+    .scene-hint { position: absolute; top: 12px; left: 14px; padding: 5px 8px; border: 1px solid rgba(68, 91, 126, .48); border-radius: 6px; background: rgba(10, 16, 29, .72); color: #8192ad; font-size: 10px; pointer-events: none; }
+
+    .panel-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 9px 15px; border-top: 1px solid #202b42; color: #8998b0; font-size: 11px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 12px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color); box-shadow: 0 0 8px var(--color); }
+
+    button { min-height: 32px; padding: 0 11px; border: 1px solid #2c3a57; border-radius: 7px; background: #111a2b; color: #dbe6fa; font: inherit; cursor: pointer; }
+    button:hover { border-color: #77a7ff; background: #17243a; }
+    button:focus-visible { outline: 2px solid #77a7ff; outline-offset: 2px; }
+    .load-error { display: none; margin: 18px 0; padding: 14px 16px; border: 1px solid #8e4653; border-radius: 9px; background: #321a24; color: #ffd5db; font-size: 13px; }
+
+    @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+    @media (max-width: 560px) {
+      .page { padding-top: 24px; }
+      .header { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .scene { height: 370px; }
+      .panel-header { min-height: auto; padding: 16px; }
+      .panel-footer { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <div class="eyebrow">18-7 · Three.js Data Experiments</div>
+        <h1>三维数据可视化</h1>
+        <p class="intro">使用 WebGL 将多变量样本与动态系统轨迹映射到三维空间。拖拽旋转、滚轮缩放，切换视角探索数据结构。</p>
+      </div>
+      <div class="version">Three.js r149 · WebGL</div>
+    </header>
+
+    <p id="load-error" class="load-error" role="alert"></p>
+
+    <section class="charts" aria-label="Three.js 三维图表">
+      <article class="panel">
+        <header class="panel-header">
+          <div class="panel-index">01 / THREE-DIMENSIONAL SCATTER</div>
+          <h2>多群组特征空间</h2>
+          <p class="panel-description">以位置表示三项特征，以颜色表示实验组别，观察不同样本簇之间的分布和重叠。</p>
+        </header>
+        <div class="scene" id="scatter-scene" role="img" aria-label="多个群组在三维特征空间中的样本分布">
+          <span class="scene-hint">拖动旋转 · 滚轮缩放</span>
+        </div>
+        <footer class="panel-footer">
+          <div class="legend">
+            <span class="legend-item"><i class="dot" style="--color:#58b7ff"></i>对照组</span>
+            <span class="legend-item"><i class="dot" style="--color:#a88bff"></i>处理组 A</span>
+            <span class="legend-item"><i class="dot" style="--color:#49d6b1"></i>处理组 B</span>
+            <span class="legend-item"><i class="dot" style="--color:#f3b75e"></i>验证组</span>
+          </div>
+          <button type="button" data-reset="scatter">重置视角</button>
+        </footer>
+      </article>
+
+      <article class="panel">
+        <header class="panel-header">
+          <div class="panel-index">02 / DYNAMIC SYSTEM TRAJECTORY</div>
+          <h2>耦合振荡与相空间轨迹</h2>
+          <p class="panel-description">绘制多变量耦合系统的参数化轨迹，并以运动粒子显示状态沿时间的演化。</p>
+        </header>
+        <div class="scene" id="trajectory-scene" role="img" aria-label="耦合动力系统在三维相空间中的周期轨迹">
+          <span class="scene-hint">拖动旋转 · 滚轮缩放</span>
+        </div>
+        <footer class="panel-footer">
+          <div class="legend">
+            <span class="legend-item"><i class="dot" style="--color:#4acdb8"></i>状态轨迹</span>
+            <span class="legend-item"><i class="dot" style="--color:#ffc86d"></i>当前状态</span>
+          </div>
+          <button type="button" data-reset="trajectory">重置视角</button>
+        </footer>
+      </article>
+    </section>
+  </main>
+
+  <script src="./cdn/three.min.js"></script>
+  <script>
+    (() => {
+      const errorBox = document.querySelector("#load-error");
+      if (!window.THREE) {
+        errorBox.textContent = "Three.js 本地库未能加载。请确认 cdn/three.min.js 文件存在后重新打开页面。";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      const scenes = [];
+      const palette = ["#58b7ff", "#a88bff", "#49d6b1", "#f3b75e"];
+
+      function seededRandom(seed) {
+        let state = seed >>> 0;
+        return () => {
+          state = (state * 1664525 + 1013904223) >>> 0;
+          return state / 4294967296;
+        };
+      }
+
+      function addAxes(scene, size, labels) {
+        const grid = new THREE.GridHelper(size * 2, 10, 0x435673, 0x26354d);
+        grid.position.y = -size;
+        grid.material.transparent = true;
+        grid.material.opacity = .42;
+        scene.add(grid);
+
+        const axisMaterial = new THREE.LineBasicMaterial({ color: 0x6d829e, transparent: true, opacity: .78 });
+        const axes = [
+          [[-size, -size, -size], [size, -size, -size]],
+          [[-size, -size, -size], [-size, size, -size]],
+          [[-size, -size, -size], [-size, -size, size]]
+        ];
+        for (const [start, end] of axes) {
+          const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...start), new THREE.Vector3(...end)]);
+          scene.add(new THREE.Line(geometry, axisMaterial));
+        }
+
+        const tickMaterial = new THREE.LineBasicMaterial({ color: 0x485c78, transparent: true, opacity: .55 });
+        for (let i = 1; i < 10; i++) {
+          const position = -size + i * size / 5;
+          const points = [
+            [position, -size, -size], [position, -size, -size + .2],
+            [-size, position, -size], [-size + .2, position, -size],
+            [-size, -size, position], [-size + .2, -size, position]
+          ].map(([x, y, z]) => new THREE.Vector3(x, y, z));
+          scene.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), tickMaterial));
+        }
+        return labels;
+      }
+
+      function createScene(element, setup, initial = {}) {
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color("#0b1220");
+        const camera = new THREE.PerspectiveCamera(42, 1, .1, 200);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setSize(element.clientWidth, element.clientHeight);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        element.appendChild(renderer.domElement);
+
+        const target = new THREE.Vector3(0, 0, 0);
+        const state = {
+          element, scene, camera, renderer, target,
+          radius: initial.radius || 22,
+          theta: initial.theta ?? .9,
+          phi: initial.phi ?? 1.05,
+          dragging: false,
+          pointerX: 0,
+          pointerY: 0
+        };
+        setup(scene, state);
+        positionCamera(state);
+        addControls(state);
+        scenes.push(state);
+        return state;
+      }
+
+      function positionCamera(state) {
+        const { camera, radius, theta, phi, target } = state;
+        camera.position.set(
+          target.x + radius * Math.sin(phi) * Math.sin(theta),
+          target.y + radius * Math.cos(phi),
+          target.z + radius * Math.sin(phi) * Math.cos(theta)
+        );
+        camera.lookAt(target);
+      }
+
+      function addControls(state) {
+        const canvas = state.renderer.domElement;
+        canvas.addEventListener("pointerdown", (event) => {
+          state.dragging = true;
+          state.pointerX = event.clientX;
+          state.pointerY = event.clientY;
+          canvas.setPointerCapture(event.pointerId);
+        });
+        canvas.addEventListener("pointermove", (event) => {
+          if (!state.dragging) return;
+          const dx = event.clientX - state.pointerX;
+          const dy = event.clientY - state.pointerY;
+          state.pointerX = event.clientX;
+          state.pointerY = event.clientY;
+          state.theta -= dx * .008;
+          state.phi = Math.max(.18, Math.min(Math.PI - .18, state.phi + dy * .008));
+          positionCamera(state);
+        });
+        canvas.addEventListener("pointerup", () => { state.dragging = false; });
+        canvas.addEventListener("pointercancel", () => { state.dragging = false; });
+        canvas.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          state.radius = Math.max(12, Math.min(42, state.radius * (event.deltaY > 0 ? 1.08 : .92)));
+          positionCamera(state);
+        }, { passive: false });
+      }
+
+      function addScatter(scene) {
+        const random = seededRandom(2026);
+        const centers = [
+          [-5, 2.4, -3],
+          [0, 3.2, 1],
+          [5, 1.8, 3],
+          [2, -3.2, -4]
+        ];
+        centers.forEach(([cx, cy, cz], groupIndex) => {
+          const positions = [];
+          for (let index = 0; index < 115; index++) {
+            const u = Math.max(.0001, random());
+            const v = Math.max(.0001, random());
+            const w = random();
+            const radius = Math.sqrt(-2 * Math.log(u));
+            const angle = 2 * Math.PI * v;
+            positions.push(
+              cx + radius * Math.cos(angle) * 1.35,
+              cy + radius * Math.sin(angle) * 1.15,
+              cz + (w - .5) * 4.8
+            );
+          }
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+          const material = new THREE.PointsMaterial({
+            color: palette[groupIndex],
+            size: 0.19,
+            transparent: true,
+            opacity: .84,
+            sizeAttenuation: true,
+            depthWrite: false
+          });
+          scene.add(new THREE.Points(geometry, material));
+
+          const center = new THREE.Mesh(
+            new THREE.SphereGeometry(.24, 16, 12),
+            new THREE.MeshBasicMaterial({ color: palette[groupIndex] })
+          );
+          center.position.set(cx, cy, cz);
+          scene.add(center);
+        });
+        addAxes(scene, 10);
+      }
+
+      const scatterState = createScene(document.querySelector("#scatter-scene"), addScatter, {
+        radius: 25, theta: .82, phi: 1.12
+      });
+
+      let movingParticle;
+      let trajectoryCurve;
+      function addTrajectory(scene) {
+        addAxes(scene, 9);
+        for (let mode = 0; mode < 3; mode++) {
+          const points = [];
+          const steps = 420;
+          for (let i = 0; i <= steps; i++) {
+            const t = (i / steps) * Math.PI * 12;
+            const decay = .82 + .18 * Math.sin(t * .08);
+            const phase = mode * Math.PI * 2 / 3;
+            points.push(new THREE.Vector3(
+              Math.sin(t + phase) * (4.8 + Math.cos(t * .25) * 1.1) * decay,
+              Math.cos(t * .5 + phase) * 4.2 + Math.sin(t * .15) * 1.3,
+              (t / (Math.PI * 12) - .5) * 15
+            ));
+          }
+          const curve = new THREE.CatmullRomCurve3(points);
+          const geometry = new THREE.BufferGeometry().setFromPoints(curve.getPoints(650));
+          scene.add(new THREE.Line(geometry, new THREE.LineBasicMaterial({
+            color: mode === 0 ? 0x49d6b1 : mode === 1 ? 0x397d91 : 0x355d78,
+            transparent: true,
+            opacity: mode === 0 ? .9 : .4
+          })));
+          if (mode === 0) trajectoryCurve = curve;
+        }
+        movingParticle = new THREE.Mesh(
+          new THREE.SphereGeometry(.28, 20, 16),
+          new THREE.MeshBasicMaterial({ color: 0xffc86d })
+        );
+        const halo = new THREE.Mesh(
+          new THREE.SphereGeometry(.52, 20, 16),
+          new THREE.MeshBasicMaterial({ color: 0xffc86d, transparent: true, opacity: .13 })
+        );
+        movingParticle.add(halo);
+        scene.add(movingParticle);
+      }
+
+      const trajectoryState = createScene(document.querySelector("#trajectory-scene"), addTrajectory, {
+        radius: 23, theta: .95, phi: 1.22
+      });
+
+      document.querySelector('[data-reset="scatter"]').addEventListener("click", () => {
+        Object.assign(scatterState, { radius: 25, theta: .82, phi: 1.12 });
+        positionCamera(scatterState);
+      });
+      document.querySelector('[data-reset="trajectory"]').addEventListener("click", () => {
+        Object.assign(trajectoryState, { radius: 23, theta: .95, phi: 1.22 });
+        positionCamera(trajectoryState);
+      });
+
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const state = scenes.find((item) => item.element === entry.target);
+          if (!state) continue;
+          const { width, height } = entry.contentRect;
+          if (width <= 0 || height <= 0) continue;
+          state.camera.aspect = width / height;
+          state.camera.updateProjectionMatrix();
+          state.renderer.setSize(width, height);
+        }
+      });
+      for (const state of [scatterState, trajectoryState]) resizeObserver.observe(state.element);
+
+      let running = true;
+      const clock = new THREE.Clock();
+      function animate() {
+        if (!running) return;
+        requestAnimationFrame(animate);
+        const elapsed = clock.getElapsedTime();
+        if (movingParticle && trajectoryCurve) movingParticle.position.copy(trajectoryCurve.getPointAt((elapsed * .06) % 1));
+        for (const state of scenes) state.renderer.render(state.scene, state.camera);
+      }
+      animate();
+
+      window.addEventListener("pagehide", () => {
+        running = false;
+        resizeObserver.disconnect();
+        for (const state of scenes) {
+          state.renderer.dispose();
+          state.scene.traverse((object) => {
+            object.geometry?.dispose();
+            if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
+            else object.material?.dispose();
+          });
+        }
+      }, { once: true });
+
+      try {
+        const testCanvas = document.createElement("canvas");
+        if (!testCanvas.getContext("webgl2") && !testCanvas.getContext("webgl")) throw new Error("浏览器或设备未启用 WebGL");
+      } catch (error) {
+        errorBox.textContent = `WebGL 无法启动：${error instanceof Error ? error.message : String(error)}。请在支持 WebGL 的浏览器中打开页面。`;
+        errorBox.style.display = "block";
+      }
+    })();
+  </script>
+</body>
+</html>

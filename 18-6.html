@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>18-6 Mermaid 智能客服流程与 ER 图</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #eaf0ff;
+      background: #090d18;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -12%, rgba(52, 94, 143, .24), transparent 58%),
+        #090d18;
+    }
+
+    .page { width: min(1480px, 100%); margin: 0 auto; padding: 34px clamp(14px, 3vw, 40px) 42px; }
+
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      color: #82b8c5;
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 8px 0; font-size: clamp(25px, 4vw, 40px); letter-spacing: .025em; }
+    .intro { max-width: 850px; margin: 0; color: #9aa8c2; font-size: 14px; line-height: 1.8; }
+    .version { flex: 0 0 auto; padding: 9px 12px; border: 1px solid #2a4354; border-radius: 9px; color: #9ed8d2; font: 11px ui-monospace, Consolas, monospace; }
+
+    .diagrams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #243149;
+      border-radius: 15px;
+      background: rgba(12, 18, 32, .94);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    }
+
+    .panel-header { padding: 19px 20px 14px; border-bottom: 1px solid #202b42; }
+    .panel-index { color: #6f89aa; font: 600 10px ui-monospace, Consolas, monospace; letter-spacing: .13em; }
+    h2 { margin: 5px 0 4px; color: #dce7fa; font-size: 17px; }
+    .panel-description { margin: 0; color: #8593ac; font-size: 11px; line-height: 1.65; }
+
+    .diagram {
+      min-height: 450px;
+      overflow: auto;
+      padding: 16px;
+      background-image: linear-gradient(rgba(99, 125, 165, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 125, 165, .035) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+    #flow-diagram svg { min-width: 640px; }
+    #er-diagram svg { min-width: 620px; }
+
+    .panel-footer { min-height: 47px; padding: 11px 17px; border-top: 1px solid #202b42; color: #8391aa; font-size: 11px; line-height: 1.6; }
+
+    .source-details { margin-top: 16px; border: 1px solid #243149; border-radius: 11px; background: #0c1220; }
+    summary { padding: 13px 16px; color: #a9bad4; font-size: 12px; cursor: pointer; }
+    pre { margin: 0; overflow: auto; padding: 15px 18px; border-top: 1px solid #202b42; color: #b7c8e0; font: 11px/1.7 ui-monospace, Consolas, monospace; white-space: pre; }
+
+    #load-error { display: none; margin: 18px 0; padding: 14px 16px; border: 1px solid #8e4653; border-radius: 9px; background: #321a24; color: #ffd5db; font-size: 13px; }
+
+    @media (max-width: 980px) { .diagrams { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      .page { padding-top: 24px; }
+      .header { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .panel-header { padding: 16px; }
+      .diagram { min-height: 360px; padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <div class="eyebrow">18-6 · Mermaid System Modeling</div>
+        <h1>智能客服流程与数据模型</h1>
+        <p class="intro">使用 Mermaid 描述知识库智能客服的在线处理流程，以及支撑会话、检索溯源、知识版本和人工反馈的关系数据模型。</p>
+      </div>
+      <div class="version">Mermaid 11.4.1 · 本地渲染</div>
+    </header>
+
+    <p id="load-error" role="alert">Mermaid 本地库未能加载。请确认 <code>cdn/mermaid.min.js</code> 文件存在后重新打开页面。</p>
+
+    <section class="diagrams" aria-label="智能客服 Mermaid 图表">
+      <article class="panel">
+        <header class="panel-header">
+          <div class="panel-index">01 / SERVICE WORKFLOW</div>
+          <h2>知识库智能客服流程图</h2>
+          <p class="panel-description">涵盖身份权限、混合检索、证据校验、工具调用与人工升级分支。</p>
+        </header>
+        <div class="diagram" id="flow-diagram" role="img" aria-label="智能客服在线问答服务流程图"></div>
+        <footer class="panel-footer">在线流程强调权限前置、证据溯源和低置信度降级处理。</footer>
+      </article>
+
+      <article class="panel">
+        <header class="panel-header">
+          <div class="panel-index">02 / KNOWLEDGE &amp; CONVERSATION ER</div>
+          <h2>知识库客服 ER 图</h2>
+          <p class="panel-description">以租户、会话、消息、模型版本、知识文档、片段、检索追踪和反馈构建可审计数据模型。</p>
+        </header>
+        <div class="diagram" id="er-diagram" role="img" aria-label="智能客服知识库与会话数据实体关系图"></div>
+        <footer class="panel-footer">关系基数展示核心实体约束；实现时还需结合租户隔离、软删除与版本策略。</footer>
+      </article>
+    </section>
+
+    <details class="source-details">
+      <summary>查看 Mermaid 源码</summary>
+      <pre id="source-code"></pre>
+    </details>
+  </main>
+
+  <script src="./cdn/mermaid.min.js"></script>
+  <script>
+    (async () => {
+      const errorBox = document.querySelector("#load-error");
+      if (!window.mermaid) {
+        errorBox.style.display = "block";
+        return;
+      }
+
+      const flow = `flowchart TB
+  U["用户咨询"] --> G["接入网关<br/>鉴权 · 限流 · 会话"]
+  G --> P["隐私与权限策略<br/>租户隔离 · ACL · 脱敏"]
+  P --> I{"识别意图与风险"}
+  I -->|知识问答| Q["问题改写<br/>补充会话上下文"]
+  I -->|业务办理| T["受控业务工具<br/>订单 · 工单 · 状态"]
+  I -->|高风险 / 需人工| H["人工坐席接管"]
+  Q --> R["混合检索<br/>向量召回 + BM25"]
+  R --> RR["重排序与证据组装<br/>来源 · 版本 · 权限"]
+  RR --> C{"证据充分且授权？"}
+  C -->|是| L["大模型生成<br/>引用证据 · 结构化回答"]
+  C -->|否| D["澄清 / 拒答 / 转人工"]
+  L --> S{"安全与质量校验"}
+  S -->|通过| A["返回带引用的答复"]
+  S -->|未通过| D
+  T --> V["工具结果校验与摘要"]
+  V --> A
+  D --> H
+  H --> A
+  A --> F["用户反馈与会话归档"]
+  H -.->|经审核的知识缺口| K["知识维护与评测集"]
+  F -.-> M["质量分析与策略迭代"]
+  M -.-> K
+
+  classDef access fill:#15263a,stroke:#70a9ec,color:#e7f0ff
+  classDef retrieve fill:#112d32,stroke:#42c2b0,color:#e0fff8
+  classDef model fill:#211d38,stroke:#a88bff,color:#f0eaff
+  classDef human fill:#34291c,stroke:#d8aa68,color:#fff2dc
+  class U,G,P access
+  class Q,R,RR,K retrieve
+  class L,S,A,F,M model
+  class T,V,H,D human`;
+
+      const er = `erDiagram
+  TENANT ||--o{ CUSTOMER : contains
+  TENANT ||--o{ KNOWLEDGE_DOCUMENT : owns
+  CUSTOMER ||--o{ CONVERSATION : starts
+  AGENT o|--o{ CONVERSATION : handles
+  CONVERSATION ||--|{ MESSAGE : contains
+  MODEL_VERSION ||--o{ MESSAGE : generates
+  KNOWLEDGE_DOCUMENT ||--|{ KNOWLEDGE_CHUNK : splits
+  MESSAGE ||--o{ RETRIEVAL_TRACE : retrieves
+  KNOWLEDGE_CHUNK ||--o{ RETRIEVAL_TRACE : cited_by
+  MESSAGE ||--o| FEEDBACK : receives
+  CONVERSATION ||--o| HANDOFF : escalates
+
+  TENANT {
+    string tenant_id PK
+    string name
+    string data_policy
+  }
+  CUSTOMER {
+    string customer_id PK
+    string tenant_id FK
+    string external_ref
+    datetime created_at
+  }
+  AGENT {
+    string agent_id PK
+    string tenant_id FK
+    string display_name
+    string role
+  }
+  CONVERSATION {
+    string conversation_id PK
+    string tenant_id FK
+    string customer_id FK
+    string status
+    datetime started_at
+  }
+  MESSAGE {
+    string message_id PK
+    string conversation_id FK
+    string model_version_id FK
+    string role
+    text content
+    float confidence
+    datetime created_at
+  }
+  MODEL_VERSION {
+    string model_version_id PK
+    string model_name
+    string prompt_version
+    string release_tag
+  }
+  KNOWLEDGE_DOCUMENT {
+    string document_id PK
+    string tenant_id FK
+    string source_uri
+    string version
+    string status
+  }
+  KNOWLEDGE_CHUNK {
+    string chunk_id PK
+    string document_id FK
+    string content_hash
+    string acl_scope
+    int page_number
+  }
+  RETRIEVAL_TRACE {
+    string trace_id PK
+    string message_id FK
+    string chunk_id FK
+    float retrieval_score
+    int rank
+  }
+  FEEDBACK {
+    string feedback_id PK
+    string message_id FK
+    int rating
+    string label
+    datetime created_at
+  }
+  HANDOFF {
+    string handoff_id PK
+    string conversation_id FK
+    string agent_id FK
+    string reason
+    string status
+  }`;
+
+      document.querySelector("#source-code").textContent = `流程图\n${flow}\n\nER 图\n${er}`;
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "strict",
+        theme: "base",
+        themeVariables: {
+          darkMode: true,
+          background: "#0c1220",
+          primaryColor: "#15263a",
+          primaryTextColor: "#eaf0ff",
+          primaryBorderColor: "#53749b",
+          lineColor: "#758ba9",
+          secondaryColor: "#112d32",
+          tertiaryColor: "#211d38",
+          mainBkg: "#15263a",
+          nodeBorder: "#53749b",
+          clusterBkg: "#101a2b",
+          clusterBorder: "#344967",
+          edgeLabelBackground: "#111a2b",
+          fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
+          fontSize: "13px"
+        },
+        flowchart: { htmlLabels: true, curve: "basis", nodeSpacing: 32, rankSpacing: 46 },
+        er: { diagramPadding: 20, layoutDirection: "TB", minEntityWidth: 120, minEntityHeight: 55 }
+      });
+
+      try {
+        const [flowResult, erResult] = await Promise.all([
+          mermaid.render("customer-service-flow", flow),
+          mermaid.render("customer-service-er", er)
+        ]);
+        const flowTarget = document.querySelector("#flow-diagram");
+        const erTarget = document.querySelector("#er-diagram");
+        flowTarget.innerHTML = flowResult.svg;
+        erTarget.innerHTML = erResult.svg;
+        const erStyle = document.createElementNS("http://www.w3.org/2000/svg", "style");
+        erStyle.textContent = `
+          rect.er.attributeBoxOdd { fill: #101d30 !important; stroke: #536a85 !important; }
+          rect.er.attributeBoxEven { fill: #14263b !important; stroke: #536a85 !important; }
+          rect.er.relationshipLabelBox { fill: #0c1220 !important; }
+          .er.relationshipLabel { fill: #c5d5e9 !important; }
+          .er.relationshipLine { stroke: #7185a3 !important; }
+        `;
+        erTarget.querySelector("svg").append(erStyle);
+        flowResult.bindFunctions?.(document.querySelector("#flow-diagram"));
+        erResult.bindFunctions?.(document.querySelector("#er-diagram"));
+      } catch (error) {
+        errorBox.style.display = "block";
+        errorBox.textContent = `图表渲染失败：${error instanceof Error ? error.message : String(error)}`;
+      }
+    })();
+  </script>
+</body>
+</html>

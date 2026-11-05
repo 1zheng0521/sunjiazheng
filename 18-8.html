@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070c18">
+  <title>18-8 全国智能客服运行数据大屏</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #e8f4ff;
+      background: #070c18;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 50% 0, rgba(13, 69, 105, .33), transparent 49%),
+        #070c18;
+    }
+
+    .dashboard { width: min(1920px, 100%); min-height: 100vh; margin: 0 auto; padding: 18px 22px 20px; }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 16px;
+      min-height: 64px;
+      margin-bottom: 15px;
+      padding: 0 15px;
+      border: 1px solid #1d3852;
+      border-radius: 12px;
+      background: linear-gradient(90deg, rgba(12, 31, 51, .92), rgba(11, 23, 40, .88), rgba(12, 31, 51, .92));
+      box-shadow: inset 0 1px rgba(114, 197, 255, .09), 0 12px 35px rgba(0, 0, 0, .2);
+    }
+
+    .eyebrow { color: #58bad1; font: 600 10px ui-monospace, Consolas, monospace; letter-spacing: .16em; }
+    h1 { margin: 4px 0 0; color: #eaf5ff; font-size: clamp(18px, 2.2vw, 27px); letter-spacing: .09em; text-align: center; }
+    .top-meta { justify-self: end; color: #a4bbd2; font: 12px ui-monospace, Consolas, monospace; text-align: right; }
+    .live { display: inline-flex; align-items: center; gap: 7px; color: #75e2c0; }
+    .live::before { width: 7px; height: 7px; border-radius: 50%; background: #53d7a8; box-shadow: 0 0 10px #53d7a8; content: ""; }
+    .demo-badge { margin-top: 5px; color: #7288a3; font-size: 10px; }
+
+    .columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr) minmax(0, 1fr); align-items: stretch; gap: 14px; }
+    .column { display: flex; min-width: 0; flex-direction: column; gap: 14px; }
+
+    .panel {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #1d3852;
+      border-radius: 11px;
+      background: linear-gradient(145deg, rgba(12, 24, 42, .97), rgba(9, 17, 31, .97));
+      box-shadow: inset 0 1px rgba(109, 188, 232, .055), 0 10px 24px rgba(0, 0, 0, .18);
+    }
+
+    .panel::before {
+      position: absolute;
+      top: 0;
+      left: 18px;
+      width: 76px;
+      height: 2px;
+      background: linear-gradient(90deg, #37c6c2, transparent);
+      content: "";
+    }
+
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px 0; }
+    h2 { margin: 0; color: #c4d9ee; font-size: 12px; font-weight: 600; letter-spacing: .05em; }
+    .panel-tag { color: #64839e; font: 9px ui-monospace, Consolas, monospace; }
+    .chart { width: 100%; height: 220px; }
+    .chart.compact { height: 190px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 12px; }
+    .kpi { padding: 11px 12px 9px; border: 1px solid rgba(41, 79, 106, .68); border-radius: 8px; background: rgba(15, 34, 52, .66); }
+    .kpi-label { color: #8ca4bc; font-size: 10px; }
+    .kpi-value { margin-top: 5px; color: #e5f4ff; font: 600 clamp(18px, 2vw, 25px) ui-monospace, Consolas, monospace; }
+    .kpi-value em { margin-left: 4px; color: #53d9be; font: 10px "Microsoft YaHei", sans-serif; font-style: normal; }
+    .kpi-note { margin-top: 4px; color: #677f98; font-size: 9px; }
+
+    .map-panel .panel-head { padding: 13px 15px 0; }
+    .map-caption { color: #6885a1; font-size: 9px; }
+    .map-chart { width: 100%; height: clamp(355px, 41vh, 500px); }
+    .map-footer { display: flex; justify-content: space-between; gap: 10px; padding: 0 14px 11px; color: #7993ad; font-size: 9px; }
+    .map-footer strong { color: #79d8d1; font-weight: 600; }
+
+    .rank-list { display: grid; gap: 9px; padding: 12px 14px 14px; }
+    .rank-row { display: grid; grid-template-columns: 21px minmax(55px, .7fr) 1.2fr 38px; align-items: center; gap: 8px; color: #a8bbce; font-size: 10px; }
+    .rank-number { color: #647d97; font: 10px ui-monospace, Consolas, monospace; }
+    .rank-row:nth-child(-n+3) .rank-number { color: #f0bc6e; }
+    .bar-track { height: 5px; overflow: hidden; border-radius: 4px; background: #1a2a3e; }
+    .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #3c96b9, #50d5be); }
+    .rank-value { color: #c6d9eb; font: 10px ui-monospace, Consolas, monospace; text-align: right; }
+
+    .small-note { padding: 0 13px 12px; color: #61778e; font-size: 9px; line-height: 1.55; }
+    .bottomline { display: flex; justify-content: space-between; gap: 16px; margin-top: 12px; padding: 0 4px; color: #546b83; font-size: 9px; }
+
+    .load-error { display: none; margin: 12px 0; padding: 12px 14px; border: 1px solid #8e4653; border-radius: 9px; background: #321a24; color: #ffd5db; font-size: 12px; }
+
+    @media (min-width: 1500px) {
+      .columns { min-height: calc(100vh - 132px); }
+      .column { justify-content: space-between; }
+    }
+
+    @media (max-width: 1080px) {
+      .dashboard { padding-inline: 14px; }
+      .columns { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); }
+      .column.right { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+      .map-chart { height: 410px; }
+    }
+
+    @media (max-width: 680px) {
+      .dashboard { padding: 10px; }
+      .topbar { grid-template-columns: 1fr auto; padding: 9px 11px; }
+      .topbar .eyebrow { display: none; }
+      h1 { grid-column: 1; grid-row: 1; text-align: left; letter-spacing: .02em; }
+      .top-meta { grid-column: 2; grid-row: 1; font-size: 10px; }
+      .columns { grid-template-columns: 1fr; gap: 10px; }
+      .column { gap: 10px; }
+      .column.right { grid-column: auto; display: flex; }
+      .column > .panel { flex: 0 0 auto; width: 100%; }
+      .map-chart { height: 390px; }
+      .chart { height: 205px; }
+      .bottomline { flex-direction: column; gap: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="dashboard">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">CUSTOMER EXPERIENCE · OPERATION CENTER</div>
+        <div class="demo-badge">数据模拟 · 非生产环境</div>
+      </div>
+      <h1>全国智能客服运行态势</h1>
+      <div class="top-meta">
+        <div class="live">系统运行中</div>
+        <div id="clock">--:--:--</div>
+      </div>
+    </header>
+
+    <p id="load-error" class="load-error" role="alert"></p>
+
+    <section class="columns" aria-label="全国智能客服数据大屏">
+      <div class="column left">
+        <article class="panel">
+          <header class="panel-head"><h2>核心服务指标</h2><span class="panel-tag">LIVE KPIs</span></header>
+          <div class="kpi-grid">
+            <div class="kpi"><div class="kpi-label">今日接待会话</div><div class="kpi-value">128,640<em>+12.8%</em></div><div class="kpi-note">较昨日同期</div></div>
+            <div class="kpi"><div class="kpi-label">智能解决率</div><div class="kpi-value">86.42<em>%</em></div><div class="kpi-note">目标值 85%</div></div>
+            <div class="kpi"><div class="kpi-label">平均首响时间</div><div class="kpi-value">1.24<em>s</em></div><div class="kpi-note">P95 · 3.8 s</div></div>
+            <div class="kpi"><div class="kpi-label">当前在线坐席</div><div class="kpi-value">2,418<em>人</em></div><div class="kpi-note">服务可用率 99.96%</div></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><h2>近 24 小时服务趋势</h2><span class="panel-tag">SESSIONS / HOUR</span></header>
+          <div id="trend-chart" class="chart compact" role="img" aria-label="近24小时客服会话量和智能解决量趋势"></div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><h2>咨询渠道构成</h2><span class="panel-tag">CHANNEL SHARE</span></header>
+          <div id="channel-chart" class="chart compact" role="img" aria-label="网页、应用、社交渠道和语音渠道会话占比"></div>
+        </article>
+      </div>
+
+      <div class="column center">
+        <article class="panel map-panel">
+          <header class="panel-head">
+            <div><h2>全国服务热度与区域节点</h2><span class="map-caption">省域热度 · 城市服务节点 · 跨区协作线路</span></div>
+            <span class="panel-tag">GEO / CHINA</span>
+          </header>
+          <div id="china-map" class="map-chart" role="img" aria-label="中国各省智能客服服务热度地图和城市节点路线"></div>
+          <footer class="map-footer"><span>热点区域：<strong>华东 · 华南 · 华北</strong></span><span>覆盖省级区域：<strong id="region-count">--</strong></span></footer>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><h2>重点区域服务质量</h2><span class="panel-tag">REGIONAL SLA</span></header>
+          <div id="region-chart" class="chart" role="img" aria-label="重点区域智能解决率和服务满意度对比"></div>
+        </article>
+      </div>
+
+      <div class="column right">
+        <article class="panel">
+          <header class="panel-head"><h2>高频咨询主题</h2><span class="panel-tag">TOP INTENTS</span></header>
+          <div id="intent-chart" class="chart compact" role="img" aria-label="智能客服高频咨询主题排行"></div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><h2>区域服务量排行</h2><span class="panel-tag">TOP REGIONS</span></header>
+          <div class="rank-list" aria-label="服务量排名">
+            <div class="rank-row"><span class="rank-number">01</span><span>广东</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="rank-value">18.6k</span></div>
+            <div class="rank-row"><span class="rank-number">02</span><span>江苏</span><div class="bar-track"><div class="bar-fill" style="width:84%"></div></div><span class="rank-value">15.7k</span></div>
+            <div class="rank-row"><span class="rank-number">03</span><span>浙江</span><div class="bar-track"><div class="bar-fill" style="width:76%"></div></div><span class="rank-value">14.2k</span></div>
+            <div class="rank-row"><span class="rank-number">04</span><span>山东</span><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><span class="rank-value">11.8k</span></div>
+            <div class="rank-row"><span class="rank-number">05</span><span>四川</span><div class="bar-track"><div class="bar-fill" style="width:54%"></div></div><span class="rank-value">10.1k</span></div>
+            <div class="rank-row"><span class="rank-number">06</span><span>河南</span><div class="bar-track"><div class="bar-fill" style="width:48%"></div></div><span class="rank-value">8.9k</span></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <header class="panel-head"><h2>模型服务健康度</h2><span class="panel-tag">MODEL SLO</span></header>
+          <div id="health-chart" class="chart compact" role="img" aria-label="检索服务、模型推理服务和知识索引服务可用率"></div>
+          <p class="small-note">健康度基于模拟 SLA 指标展示；线上运行请接入真实监控与告警数据。</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="bottomline"><span>智能客服运营与地理分布 · 示例数据仅用于界面演示</span><span>本地资源 · Apache ECharts 5.6.0 · 地图数据来自行政区 GeoJSON</span></footer>
+  </main>
+
+  <script src="./cdn/echarts.min.js"></script>
+  <script src="./cdn/china-map.js"></script>
+  <script>
+    (() => {
+      const errorBox = document.querySelector("#load-error");
+      if (!window.echarts || !window.__CHINA_GEOJSON) {
+        errorBox.textContent = "大屏资源未能加载。请确认 cdn/echarts.min.js 与 cdn/china-map.js 文件存在后重新打开页面。";
+        errorBox.style.display = "block";
+        return;
+      }
+
+      echarts.registerMap("china", window.__CHINA_GEOJSON);
+      const charts = [];
+      const color = { cyan: "#42d5d0", blue: "#4b9fe6", purple: "#9b85ee", amber: "#e8b65f", muted: "#7890aa" };
+      const axisStyle = {
+        axisLine: { lineStyle: { color: "#28435b" } },
+        axisLabel: { color: "#7189a2", fontSize: 9 },
+        splitLine: { lineStyle: { color: "rgba(70, 104, 132, .18)", type: "dashed" } }
+      };
+
+      function initChart(id, option) {
+        const chart = echarts.init(document.getElementById(id));
+        chart.setOption(option);
+        charts.push(chart);
+        return chart;
+      }
+
+      const provinceValues = [
+        ["北京市", 82], ["天津市", 63], ["河北省", 67], ["山西省", 45], ["内蒙古自治区", 37],
+        ["辽宁省", 54], ["吉林省", 32], ["黑龙江省", 29], ["上海市", 91], ["江苏省", 94],
+        ["浙江省", 96], ["安徽省", 72], ["福建省", 75], ["江西省", 53], ["山东省", 88],
+        ["河南省", 78], ["湖北省", 72], ["湖南省", 69], ["广东省", 100], ["广西壮族自治区", 49],
+        ["海南省", 43], ["重庆市", 65], ["四川省", 81], ["贵州省", 42], ["云南省", 46],
+        ["西藏自治区", 19], ["陕西省", 62], ["甘肃省", 34], ["青海省", 21], ["宁夏回族自治区", 27],
+        ["新疆维吾尔自治区", 33], ["台湾省", 41], ["香港特别行政区", 58], ["澳门特别行政区", 36]
+      ].map(([name, value]) => ({ name, value }));
+
+      const hubs = [
+        { name: "北京", value: [116.4074, 39.9042, 94] },
+        { name: "上海", value: [121.4737, 31.2304, 100] },
+        { name: "广州", value: [113.2644, 23.1291, 98] },
+        { name: "成都", value: [104.0665, 30.5728, 82] },
+        { name: "武汉", value: [114.3054, 30.5931, 76] },
+        { name: "西安", value: [108.9398, 34.3416, 69] },
+        { name: "杭州", value: [120.1551, 30.2741, 89] },
+        { name: "乌鲁木齐", value: [87.6168, 43.8256, 47] },
+        { name: "拉萨", value: [91.1409, 29.6456, 31] },
+        { name: "昆明", value: [102.8329, 24.8801, 52] },
+        { name: "沈阳", value: [123.4315, 41.8057, 56] },
+        { name: "深圳", value: [114.0579, 22.5431, 97] }
+      ];
+      const routes = [
+        ["北京", "上海"], ["北京", "广州"], ["北京", "成都"], ["北京", "乌鲁木齐"],
+        ["上海", "杭州"], ["上海", "深圳"], ["广州", "成都"], ["广州", "昆明"],
+        ["成都", "拉萨"], ["成都", "西安"], ["武汉", "上海"], ["沈阳", "北京"]
+      ].map(([fromName, toName]) => ({
+        fromName,
+        toName,
+        coords: [hubs.find((hub) => hub.name === fromName).value, hubs.find((hub) => hub.name === toName).value]
+      }));
+
+      document.querySelector("#region-count").textContent = `${provinceValues.length} 个`;
+
+      initChart("china-map", {
+        animationDuration: 700,
+        tooltip: {
+          trigger: "item",
+          backgroundColor: "rgba(7, 15, 27, .96)",
+          borderColor: "#2b6576",
+          textStyle: { color: "#d8efff", fontSize: 11 },
+          formatter(params) {
+            if (params.seriesType === "effectScatter") return `${params.name} 服务节点<br>接待指数：${params.value[2]}`;
+            return `${params.name}<br>服务热度：${params.value ?? "暂无数据"}`;
+          }
+        },
+        visualMap: {
+          min: 15,
+          max: 100,
+          left: 12,
+          bottom: 10,
+          itemWidth: 9,
+          itemHeight: 76,
+          text: ["高", "低"],
+          textStyle: { color: "#91a9bd", fontSize: 9 },
+          inRange: { color: ["#12293e", "#145c72", "#24b6a9", "#f0c46b"] },
+          calculable: false,
+          seriesIndex: 0
+        },
+        geo: {
+          map: "china",
+          roam: true,
+          zoom: 1.05,
+          top: 13,
+          bottom: 25,
+          left: "center",
+          itemStyle: {
+            areaColor: "#10233a",
+            borderColor: "#34839a",
+            borderWidth: .75,
+            shadowColor: "rgba(20, 169, 191, .2)",
+            shadowBlur: 9
+          },
+          emphasis: {
+            itemStyle: { areaColor: "#245477", borderColor: "#8ce8e1", borderWidth: 1.2 },
+            label: { show: true, color: "#e7faff", fontSize: 9 }
+          },
+          select: { itemStyle: { areaColor: "#246877" } }
+        },
+        series: [
+          {
+            name: "省域服务热度",
+            type: "map",
+            geoIndex: 0,
+            data: provinceValues,
+            emphasis: { label: { show: true, color: "#effbff", fontSize: 8 } }
+          },
+          {
+            name: "跨区域协作",
+            type: "lines",
+            coordinateSystem: "geo",
+            zlevel: 2,
+            effect: { show: true, period: 5, trailLength: .25, symbol: "arrow", symbolSize: 5, color: "#7ce9dc" },
+            lineStyle: { color: "#50d6cf", width: 1, opacity: .43, curveness: .18 },
+            data: routes
+          },
+          {
+            name: "服务节点",
+            type: "effectScatter",
+            coordinateSystem: "geo",
+            zlevel: 3,
+            rippleEffect: { brushType: "stroke", scale: 2.4 },
+            symbolSize(value) { return Math.max(5, Math.min(10, value[2] / 13)); },
+            itemStyle: { color: "#f3ca74", shadowBlur: 9, shadowColor: "#59d9d4" },
+            label: {
+              show: true,
+              position: "right",
+              distance: 4,
+              color: "#c5e1f3",
+              fontSize: 8,
+              formatter: (params) => params.name
+            },
+            data: hubs
+          }
+        ]
+      });
+
+      const hours = Array.from({ length: 24 }, (_, index) => `${String(index).padStart(2, "0")}:00`);
+      const sessions = [3200, 2800, 2500, 2200, 2100, 2600, 4300, 6900, 8400, 7800, 8100, 9200, 8600, 7900, 8300, 9600, 10800, 11500, 10200, 8900, 7400, 6100, 4800, 3900];
+      const solved = sessions.map((value, index) => Math.round(value * (.82 + .035 * Math.sin(index * .7))));
+      initChart("trend-chart", {
+        color: [color.cyan, color.purple],
+        tooltip: { trigger: "axis", backgroundColor: "#0b1626", borderColor: "#29445c", textStyle: { color: "#d9eaf6", fontSize: 10 } },
+        legend: { top: 3, right: 12, itemWidth: 8, itemHeight: 8, textStyle: { color: "#8299b1", fontSize: 9 }, data: ["会话量", "智能解决"] },
+        grid: { left: 38, right: 12, top: 35, bottom: 27 },
+        xAxis: { type: "category", boundaryGap: false, data: hours.filter((_, index) => index % 3 === 0), ...axisStyle },
+        yAxis: { type: "value", ...axisStyle, axisLabel: { ...axisStyle.axisLabel, formatter: (value) => `${value / 1000}k` } },
+        series: [
+          { name: "会话量", type: "line", smooth: true, symbol: "none", data: sessions.filter((_, index) => index % 3 === 0), lineStyle: { width: 2 }, areaStyle: { opacity: .13 } },
+          { name: "智能解决", type: "line", smooth: true, symbol: "none", data: solved.filter((_, index) => index % 3 === 0), lineStyle: { width: 1.5, type: "dashed" } }
+        ]
+      });
+
+      initChart("channel-chart", {
+        color: [color.cyan, color.blue, color.purple, color.amber],
+        tooltip: { trigger: "item", backgroundColor: "#0b1626", borderColor: "#29445c", textStyle: { color: "#d9eaf6", fontSize: 10 }, formatter: "{b}<br/>会话：{c} · 占比：{d}%" },
+        legend: { orient: "vertical", right: "5%", top: "middle", itemWidth: 8, itemHeight: 8, textStyle: { color: "#91a7bc", fontSize: 9 } },
+        series: [{
+          type: "pie",
+          radius: ["48%", "71%"],
+          center: ["36%", "54%"],
+          avoidLabelOverlap: true,
+          itemStyle: { borderColor: "#0c1727", borderWidth: 3 },
+          label: { show: true, color: "#a9bed1", fontSize: 9, formatter: "{d}%" },
+          labelLine: { length: 7, length2: 5, lineStyle: { color: "#547189" } },
+          data: [
+            { name: "网页客服", value: 46820 },
+            { name: "移动应用", value: 36240 },
+            { name: "社交渠道", value: 29860 },
+            { name: "语音服务", value: 15720 }
+          ]
+        }]
+      });
+
+      initChart("region-chart", {
+        color: [color.cyan, color.blue],
+        tooltip: { trigger: "axis", backgroundColor: "#0b1626", borderColor: "#29445c", textStyle: { color: "#d9eaf6", fontSize: 10 } },
+        legend: { top: 4, right: 15, itemWidth: 8, itemHeight: 8, textStyle: { color: "#8299b1", fontSize: 9 }, data: ["智能解决率", "满意度"] },
+        grid: { left: 43, right: 16, top: 37, bottom: 28 },
+        xAxis: { type: "category", data: ["华北", "华东", "华南", "华中", "西南", "西北"], ...axisStyle, axisLabel: { ...axisStyle.axisLabel, interval: 0 } },
+        yAxis: { type: "value", min: 70, max: 100, ...axisStyle, axisLabel: { ...axisStyle.axisLabel, formatter: "{value}%" } },
+        series: [
+          { name: "智能解决率", type: "bar", barWidth: 10, data: [83, 89, 91, 85, 84, 79], itemStyle: { borderRadius: [4, 4, 0, 0], color: color.cyan } },
+          { name: "满意度", type: "line", smooth: true, symbolSize: 5, data: [91, 94, 95, 92, 90, 88], lineStyle: { width: 2 }, itemStyle: { color: color.amber } }
+        ]
+      });
+
+      initChart("intent-chart", {
+        color: [color.cyan],
+        tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, backgroundColor: "#0b1626", borderColor: "#29445c", textStyle: { color: "#d9eaf6", fontSize: 10 }, formatter: (params) => `${params[0].name}<br/>今日咨询：${params[0].value.toLocaleString("zh-CN")}` },
+        grid: { left: 77, right: 31, top: 16, bottom: 15 },
+        xAxis: { type: "value", show: false, max: 16000 },
+        yAxis: {
+          type: "category",
+          inverse: true,
+          data: ["订单与物流", "产品使用", "账户与登录", "退款售后", "活动权益", "发票申请"],
+          axisLine: { show: false },
+          axisTick: { show: false },
+          axisLabel: { color: "#a5b9cd", fontSize: 9 }
+        },
+        series: [{
+          type: "bar",
+          barWidth: 10,
+          showBackground: true,
+          backgroundStyle: { color: "#17273a", borderRadius: 5 },
+          label: { show: true, position: "right", color: "#9ab5c9", fontSize: 9, formatter: (params) => `${(params.value / 1000).toFixed(1)}k` },
+          itemStyle: {
+            borderRadius: [0, 5, 5, 0],
+            color: (params) => new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+              { offset: 0, color: "#237992" },
+              { offset: 1, color: params.dataIndex < 2 ? "#68dec2" : "#438bae" }
+            ])
+          },
+          data: [14620, 11840, 9760, 8620, 6940, 4280]
+        }]
+      });
+
+      initChart("health-chart", {
+        tooltip: { trigger: "item", backgroundColor: "#0b1626", borderColor: "#29445c", textStyle: { color: "#d9eaf6", fontSize: 10 }, formatter: (params) => `${params.name}<br/>可用率：${params.value}%` },
+        series: [{
+          type: "gauge",
+          center: ["50%", "60%"],
+          radius: "76%",
+          min: 95,
+          max: 100,
+          startAngle: 200,
+          endAngle: -20,
+          splitNumber: 5,
+          progress: { show: true, width: 8, roundCap: true, itemStyle: { color: color.cyan } },
+          axisLine: { lineStyle: { width: 8, color: [[1, "#1c3044"]] } },
+          axisTick: { show: false },
+          splitLine: { distance: -12, length: 5, lineStyle: { color: "#526c83", width: 1 } },
+          axisLabel: { distance: 14, color: "#7189a2", fontSize: 8 },
+          pointer: { show: false },
+          anchor: { show: false },
+          title: { offsetCenter: [0, "35%"], color: "#8ea6be", fontSize: 9 },
+          detail: { valueAnimation: true, offsetCenter: [0, "4%"], color: "#d8f6f0", fontSize: 20, fontFamily: "monospace", formatter: "{value}%" },
+          data: [{ value: 99.96, name: "服务综合可用率" }]
+        }]
+      });
+
+      function updateClock() {
+        document.querySelector("#clock").textContent = new Intl.DateTimeFormat("zh-CN", {
+          year: "numeric", month: "2-digit", day: "2-digit",
+          hour: "2-digit", minute: "2-digit", second: "2-digit",
+          hour12: false
+        }).format(new Date()).replace(/\//g, "-");
+      }
+      updateClock();
+      const clockTimer = window.setInterval(updateClock, 1000);
+
+      const observer = new ResizeObserver((entries) => {
+        const resizedCharts = new Set(entries.map((entry) => echarts.getInstanceByDom(entry.target)).filter(Boolean));
+        for (const chart of resizedCharts) chart.resize();
+      });
+      for (const element of document.querySelectorAll(".chart, .map-chart")) observer.observe(element);
+      window.addEventListener("pagehide", () => {
+        window.clearInterval(clockTimer);
+        observer.disconnect();
+        for (const chart of charts) chart.dispose();
+      }, { once: true });
+    })();
+  </script>
+</body>
+</html>

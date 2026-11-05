@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>18-3 知识库智能客服系统架构 | Research Architecture</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #eaf0ff;
+      background: #090d18;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -12%, rgba(52, 94, 143, .25), transparent 58%),
+        #090d18;
+    }
+
+    .page { width: min(1480px, 100%); margin: 0 auto; padding: 34px clamp(14px, 3vw, 40px) 36px; }
+
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      color: #82b8c5;
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 8px 0; font-size: clamp(25px, 4vw, 40px); letter-spacing: .025em; }
+    .intro { max-width: 850px; margin: 0; color: #9aa8c2; font-size: 14px; line-height: 1.8; }
+    .research-stamp { flex: 0 0 auto; padding: 10px 13px; border: 1px solid #2a4354; border-radius: 9px; color: #9ed8d2; font-size: 12px; }
+
+    .figure {
+      overflow: auto;
+      border: 1px solid #243149;
+      border-radius: 16px;
+      background: #0c1220;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .28);
+      scrollbar-color: #3a4b67 #0c1220;
+    }
+
+    svg { display: block; width: 100%; min-width: 980px; height: auto; }
+    .mobile-note { display: none; margin: 10px 2px 0; color: #7585a1; font-size: 12px; }
+
+    .caption {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 18px;
+      border-top: 1px solid #202b42;
+      color: #8795af;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .swatch { width: 9px; height: 9px; border-radius: 3px; background: var(--color); }
+    #details { max-width: 570px; min-height: 21px; margin: 0; text-align: right; }
+    #details strong { color: #e0e9fb; }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .note {
+      padding: 15px 16px;
+      border: 1px solid #202c42;
+      border-radius: 11px;
+      background: rgba(15, 23, 39, .78);
+    }
+
+    .note h2 { margin: 0 0 6px; color: #c8d8f3; font-size: 13px; }
+    .note p { margin: 0; color: #8d9bb4; font-size: 12px; line-height: 1.75; }
+    .note strong { color: #b7cce8; font-weight: 600; }
+
+    .layer {
+      fill: rgba(16, 25, 42, .72);
+      stroke: #24334b;
+      stroke-width: 1.2;
+    }
+
+    .layer-title { fill: #9bb0d0; font: 600 14px "Microsoft YaHei", sans-serif; letter-spacing: .04em; }
+    .layer-index { fill: #667b9d; font: 600 11px ui-monospace, Consolas, monospace; }
+    .layer-caption { fill: #71819d; font: 11px "Microsoft YaHei", sans-serif; }
+    .node { cursor: pointer; outline: none; }
+    .node rect {
+      fill: #121e30;
+      stroke: #33425d;
+      stroke-width: 1.2;
+      transition: stroke .18s ease, fill .18s ease, filter .18s ease;
+    }
+
+    .node:hover rect, .node:focus rect, .node.is-selected rect {
+      fill: #192941;
+      stroke: var(--accent);
+      stroke-width: 2;
+      filter: url(#soft-glow);
+    }
+
+    .node-title { fill: #e5edfc; font: 600 13px "Microsoft YaHei", sans-serif; }
+    .node-subtitle { fill: #91a1bb; font: 10px "Microsoft YaHei", sans-serif; }
+    .node-tag { fill: var(--accent); font: 600 9px ui-monospace, Consolas, monospace; letter-spacing: .08em; }
+    .flow {
+      fill: none;
+      stroke: #61758f;
+      stroke-width: 1.7;
+      marker-end: url(#arrow);
+    }
+
+    .flow.research { stroke: #5daea7; marker-end: url(#arrow-teal); }
+    .flow.knowledge { stroke: #d3a465; marker-end: url(#arrow-amber); }
+    .flow-label { fill: #8ea0ba; font: 10px "Microsoft YaHei", sans-serif; }
+    .dashed { stroke-dasharray: 6 6; }
+    .feedback { fill: none; stroke: #8594ae; stroke-width: 1.3; stroke-dasharray: 5 5; marker-end: url(#arrow); }
+    .pill { fill: #15253a; stroke: #344967; }
+    .pill-text { fill: #b3c5df; font: 10px "Microsoft YaHei", sans-serif; }
+    .svg-small { fill: #7788a4; font: 10px "Microsoft YaHei", sans-serif; }
+
+    @media (max-width: 760px) {
+      .page { padding-top: 24px; }
+      .header { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .research-stamp { padding: 7px 10px; }
+      .mobile-note { display: block; }
+      .caption { flex-direction: column; }
+      #details { max-width: none; text-align: left; }
+      .notes { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <div class="eyebrow">18-3 · Research System Architecture</div>
+        <h1>知识库增强型智能客服系统</h1>
+        <p class="intro">以检索增强生成（RAG）为核心，连接多渠道会话、权限感知知识检索、模型推理与人工服务；通过离线知识治理和在线评测形成可追溯、可迭代的研究闭环。</p>
+      </div>
+      <div class="research-stamp">科研方向 · RAG / Agent / Trustworthy AI</div>
+    </header>
+
+    <section class="figure" aria-label="知识库智能客服 SVG 系统架构图">
+      <svg viewBox="0 0 1440 1070" role="img" aria-labelledby="diagram-title diagram-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="diagram-title">知识库增强型智能客服系统架构图</title>
+        <desc id="diagram-desc">架构分为多渠道接入、在线 RAG 服务、离线知识加工和评测治理四部分。在线问题经过身份权限校验、意图路由、混合检索、重排序、证据组装和大模型生成，并以引用答案或人工转接反馈给用户。</desc>
+        <defs>
+          <linearGradient id="header-gradient" x1="0" x2="1">
+            <stop offset="0" stop-color="#6da4da"/>
+            <stop offset="1" stop-color="#55b5a5"/>
+          </linearGradient>
+          <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#7185a3"/>
+          </marker>
+          <marker id="arrow-teal" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#5daea7"/>
+          </marker>
+          <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+            <path d="M0,0 L8,4 L0,8 Z" fill="#d3a465"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="1440" height="1070" fill="#0c1220"/>
+        <rect x="0" y="0" width="5" height="1070" fill="url(#header-gradient)"/>
+
+        <rect class="layer" x="30" y="28" width="1380" height="124" rx="14"/>
+        <text class="layer-index" x="52" y="54">01 / CHANNELS</text>
+        <text class="layer-title" x="174" y="54">多渠道交互入口</text>
+        <text class="layer-caption" x="365" y="54">统一会话协议 · 流式响应 · 会话上下文</text>
+
+        <g class="node" data-node="web" tabindex="0" role="button" aria-label="网页与移动端：用户通过文本或语音发起咨询">
+          <rect x="70" y="72" width="250" height="56" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-title" x="88" y="96">网页 / 移动端</text>
+          <text class="node-subtitle" x="88" y="115">Web · App · H5 · 文本 / 语音</text>
+        </g>
+        <g class="node" data-node="social" tabindex="0" role="button" aria-label="社交与消息渠道：接入公众号、企业微信等渠道">
+          <rect x="345" y="72" width="250" height="56" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-title" x="363" y="96">社交 / 消息渠道</text>
+          <text class="node-subtitle" x="363" y="115">公众号 · 企业微信 · 在线消息</text>
+        </g>
+        <g class="node" data-node="agent-ui" tabindex="0" role="button" aria-label="坐席工作台：查看对话、证据与转接任务">
+          <rect x="620" y="72" width="250" height="56" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-title" x="638" y="96">人工坐席工作台</text>
+          <text class="node-subtitle" x="638" y="115">会话接管 · 证据查看 · 反馈标注</text>
+        </g>
+        <g class="node" data-node="api" tabindex="0" role="button" aria-label="接入网关：鉴权、限流、协议适配与审计">
+          <rect x="1015" y="72" width="325" height="56" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-title" x="1033" y="96">接入网关 / 会话 API</text>
+          <text class="node-subtitle" x="1033" y="115">TLS · 鉴权 · 限流 · 协议适配 · 审计</text>
+        </g>
+        <path d="M195 128 V139 M470 128 V139 M745 128 V139 M195 139 H1178 V128" fill="none" stroke="#61758f" stroke-width="1.7" marker-end="url(#arrow)"/>
+        <path class="flow" d="M1178 128 V184"/>
+
+        <rect class="layer" x="30" y="174" width="1380" height="360" rx="14"/>
+        <text class="layer-index" x="52" y="201">02 / ONLINE INFERENCE</text>
+        <text class="layer-title" x="228" y="201">在线智能客服 · 检索增强生成（RAG）</text>
+        <text class="layer-caption" x="800" y="201">问题 → 检索 → 证据约束生成 → 引用 / 转人工</text>
+
+        <g class="node" data-node="identity" tabindex="0" role="button" aria-label="身份与策略：用户鉴权、租户隔离和知识访问控制">
+          <rect x="55" y="229" width="166" height="78" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-tag" x="70" y="248">ACCESS</text>
+          <text class="node-title" x="70" y="269">身份与策略</text>
+          <text class="node-subtitle" x="70" y="288">租户隔离 · ACL · 脱敏</text>
+        </g>
+        <g class="node" data-node="router" tabindex="0" role="button" aria-label="意图识别与路由：判断问题类型并选择知识检索、工具调用或人工服务">
+          <rect x="245" y="229" width="166" height="78" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-tag" x="260" y="248">ROUTING</text>
+          <text class="node-title" x="260" y="269">意图识别与路由</text>
+          <text class="node-subtitle" x="260" y="288">分类 · 置信度 · 澄清</text>
+        </g>
+        <g class="node" data-node="orchestrator" tabindex="0" role="button" aria-label="对话编排器：管理对话状态、提示模板、检索调用与工具执行">
+          <rect x="435" y="229" width="166" height="78" rx="9" style="--accent:#a88bff"/>
+          <text class="node-tag" x="450" y="248">ORCHESTRATION</text>
+          <text class="node-title" x="450" y="269">对话编排器</text>
+          <text class="node-subtitle" x="450" y="288">状态机 · Prompt · 工具路由</text>
+        </g>
+        <g class="node" data-node="retrieval" tabindex="0" role="button" aria-label="混合检索：结合向量语义检索和关键词检索召回候选证据">
+          <rect x="625" y="229" width="166" height="78" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-tag" x="640" y="248">RETRIEVAL</text>
+          <text class="node-title" x="640" y="269">混合检索</text>
+          <text class="node-subtitle" x="640" y="288">向量召回 + BM25</text>
+        </g>
+        <g class="node" data-node="rerank" tabindex="0" role="button" aria-label="重排序与证据组装：精排候选片段、去重并构建带来源的上下文">
+          <rect x="815" y="229" width="166" height="78" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-tag" x="830" y="248">EVIDENCE</text>
+          <text class="node-title" x="830" y="269">重排序 / 证据组装</text>
+          <text class="node-subtitle" x="830" y="288">Rerank · 去重 · 来源定位</text>
+        </g>
+        <g class="node" data-node="llm" tabindex="0" role="button" aria-label="大模型推理：在受控提示模板中依据证据生成答案，并遵循拒答策略">
+          <rect x="1005" y="229" width="166" height="78" rx="9" style="--accent:#a88bff"/>
+          <text class="node-tag" x="1020" y="248">GENERATION</text>
+          <text class="node-title" x="1020" y="269">大模型推理</text>
+          <text class="node-subtitle" x="1020" y="288">受控 Prompt · 结构化输出</text>
+        </g>
+        <g class="node" data-node="response" tabindex="0" role="button" aria-label="答案校验与交付：检查安全、证据支持和置信度后附引用或转人工">
+          <rect x="1195" y="229" width="166" height="78" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="1210" y="248">DELIVERY</text>
+          <text class="node-title" x="1210" y="269">答案校验与交付</text>
+          <text class="node-subtitle" x="1210" y="288">引用溯源 · 低置信转人工</text>
+        </g>
+
+        <path class="flow" d="M221 268 H245"/>
+        <path class="flow" d="M411 268 H435"/>
+        <path class="flow research" d="M601 268 H625"/>
+        <path class="flow research" d="M791 268 H815"/>
+        <path class="flow research" d="M981 268 H1005"/>
+        <path class="flow" d="M1171 268 H1195"/>
+        <text class="flow-label" x="630" y="324">查询改写 · Query Embedding</text>
+        <text class="flow-label" x="1012" y="324">受证据约束生成</text>
+
+        <g class="node" data-node="tools" tabindex="0" role="button" aria-label="业务工具与 API：通过受控工具调用查询订单、工单或业务状态">
+          <rect x="280" y="367" width="230" height="67" rx="9" style="--accent:#a88bff"/>
+          <text class="node-title" x="298" y="392">业务工具 / API</text>
+          <text class="node-subtitle" x="298" y="413">订单查询 · 工单 · 只读业务数据</text>
+        </g>
+        <g class="node" data-node="vector" tabindex="0" role="button" aria-label="向量索引：保存知识片段向量和可过滤元数据">
+          <rect x="590" y="367" width="230" height="67" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-title" x="608" y="392">向量索引</text>
+          <text class="node-subtitle" x="608" y="413">Embedding · ANN · Metadata Filter</text>
+        </g>
+        <g class="node" data-node="keyword" tabindex="0" role="button" aria-label="关键词索引：支持精确术语、编号与关键词检索">
+          <rect x="850" y="367" width="230" height="67" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-title" x="868" y="392">关键词索引</text>
+          <text class="node-subtitle" x="868" y="413">BM25 · 术语 / 编号精确匹配</text>
+        </g>
+        <g class="node" data-node="human" tabindex="0" role="button" aria-label="人工服务与知识反馈：接管复杂或低置信问题并提交修订反馈">
+          <rect x="1120" y="367" width="230" height="67" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-title" x="1138" y="392">人工接管 / 升级</text>
+          <text class="node-subtitle" x="1138" y="413">低置信 · 高风险 · 用户请求</text>
+        </g>
+        <path class="flow dashed" d="M518 307 V345 H395 V367"/>
+        <path class="flow research" d="M708 307 V367"/>
+        <path class="flow research" d="M708 345 H965 V367"/>
+        <path class="flow dashed" d="M1278 307 V367"/>
+        <path class="flow research" d="M705 367 V347 H898 V307"/>
+        <path class="flow research" d="M965 367 V347 H898 V307"/>
+        <path class="flow dashed" d="M510 434 V445 H1235 V434"/>
+        <text class="flow-label" x="785" y="360">候选证据</text>
+        <path class="flow dashed" d="M1361 268 H1388 V140 H1340"/>
+        <text class="flow-label" x="1245" y="166">响应返回渠道</text>
+
+        <rect class="pill" x="57" y="458" width="292" height="44" rx="9"/>
+        <text class="pill-text" x="74" y="477">会话记忆</text>
+        <text class="svg-small" x="74" y="493">短期上下文 · 摘要压缩 · TTL 管理</text>
+        <rect class="pill" x="371" y="458" width="350" height="44" rx="9"/>
+        <text class="pill-text" x="388" y="477">安全护栏</text>
+        <text class="svg-small" x="388" y="493">提示注入防护 · PII 脱敏 · 内容策略</text>
+        <rect class="pill" x="743" y="458" width="608" height="44" rx="9"/>
+        <text class="pill-text" x="760" y="477">响应契约</text>
+        <text class="svg-small" x="760" y="493">答案包含来源标识与置信信号；证据不足时澄清、拒答或转人工，而非编造事实</text>
+
+        <rect class="layer" x="30" y="552" width="1380" height="244" rx="14"/>
+        <text class="layer-index" x="52" y="579">03 / OFFLINE KNOWLEDGE PIPELINE</text>
+        <text class="layer-title" x="302" y="579">离线知识工程 · 从原始资料到可检索、可追溯的知识单元</text>
+        <text class="layer-caption" x="1000" y="579">增量更新 · 版本管理 · 权限继承</text>
+
+        <g class="node" data-node="sources" tabindex="0" role="button" aria-label="知识来源：FAQ、产品文档、政策规范、工单和业务知识">
+          <rect x="58" y="615" width="175" height="86" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="73" y="635">SOURCES</text>
+          <text class="node-title" x="73" y="657">知识来源</text>
+          <text class="node-subtitle" x="73" y="677">FAQ · 文档 · 工单 · Wiki</text>
+          <text class="node-subtitle" x="73" y="692">结构化 / 非结构化数据</text>
+        </g>
+        <g class="node" data-node="ingest" tabindex="0" role="button" aria-label="连接器与解析：采集文档、解析格式、抽取结构并保留来源元数据">
+          <rect x="263" y="615" width="175" height="86" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="278" y="635">INGEST</text>
+          <text class="node-title" x="278" y="657">采集与解析</text>
+          <text class="node-subtitle" x="278" y="677">Connectors · OCR · Layout</text>
+          <text class="node-subtitle" x="278" y="692">来源 ID · 时间 · ACL</text>
+        </g>
+        <g class="node" data-node="clean" tabindex="0" role="button" aria-label="清洗与切分：去重、纠错、结构化切片并绑定权限和引用元数据">
+          <rect x="468" y="615" width="175" height="86" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="483" y="635">TRANSFORM</text>
+          <text class="node-title" x="483" y="657">清洗与语义切分</text>
+          <text class="node-subtitle" x="483" y="677">去重 · Chunking · 版本化</text>
+          <text class="node-subtitle" x="483" y="692">权限 / 页码 / 来源定位</text>
+        </g>
+        <g class="node" data-node="embed" tabindex="0" role="button" aria-label="向量化与索引构建：生成 Embedding 并建立向量和关键词索引">
+          <rect x="673" y="615" width="175" height="86" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-tag" x="688" y="635">INDEXING</text>
+          <text class="node-title" x="688" y="657">向量化与建索引</text>
+          <text class="node-subtitle" x="688" y="677">Embedding · BM25</text>
+          <text class="node-subtitle" x="688" y="692">离线批处理 / 增量更新</text>
+        </g>
+        <g class="node" data-node="knowledge-store" tabindex="0" role="button" aria-label="知识存储：保存原文、片段、索引、元数据与版本关系">
+          <rect x="878" y="615" width="175" height="86" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-tag" x="893" y="635">KNOWLEDGE STORE</text>
+          <text class="node-title" x="893" y="657">知识与索引存储</text>
+          <text class="node-subtitle" x="893" y="677">Object Store · Vector DB</text>
+          <text class="node-subtitle" x="893" y="692">Keyword Index · Metadata DB</text>
+        </g>
+        <g class="node" data-node="curation" tabindex="0" role="button" aria-label="知识审核与发布：专家审核、版本发布、回滚和过期知识下线">
+          <rect x="1083" y="615" width="175" height="86" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="1098" y="635">GOVERNANCE</text>
+          <text class="node-title" x="1098" y="657">审核与版本发布</text>
+          <text class="node-subtitle" x="1098" y="677">专家校验 · 生效时间</text>
+          <text class="node-subtitle" x="1098" y="692">回滚 · 过期 / 撤回</text>
+        </g>
+        <path class="flow knowledge" d="M233 658 H263"/>
+        <path class="flow knowledge" d="M438 658 H468"/>
+        <path class="flow knowledge" d="M643 658 H673"/>
+        <path class="flow knowledge" d="M848 658 H878"/>
+        <path class="flow knowledge" d="M1053 658 H1083"/>
+        <path class="flow research dashed" d="M965 615 V555 H708 V434"/>
+        <text class="flow-label" x="812" y="547">授权过滤的在线读取</text>
+
+        <rect class="layer" x="30" y="814" width="1380" height="218" rx="14"/>
+        <text class="layer-index" x="52" y="841">04 / EVALUATION, SAFETY &amp; FEEDBACK</text>
+        <text class="layer-title" x="402" y="841">评测、治理与持续改进 · 贯穿数据、模型和服务的全生命周期</text>
+
+        <g class="node" data-node="evaluation" tabindex="0" role="button" aria-label="离线评测：使用专家标注基准评估检索、答案质量和安全性">
+          <rect x="58" y="865" width="245" height="86" rx="9" style="--accent:#70a9ec"/>
+          <text class="node-tag" x="74" y="886">OFFLINE EVALUATION</text>
+          <text class="node-title" x="74" y="909">离线基准与消融实验</text>
+          <text class="node-subtitle" x="74" y="930">Recall@k · nDCG · Groundedness</text>
+          <text class="node-subtitle" x="74" y="944">人工标注集 · 版本对照 · 回归测试</text>
+        </g>
+        <g class="node" data-node="safety" tabindex="0" role="button" aria-label="可信与安全：隐私保护、权限边界、越狱检测和风险控制">
+          <rect x="328" y="865" width="245" height="86" rx="9" style="--accent:#d8aa68"/>
+          <text class="node-tag" x="344" y="886">TRUST &amp; SAFETY</text>
+          <text class="node-title" x="344" y="909">隐私与安全治理</text>
+          <text class="node-subtitle" x="344" y="930">PII · ACL · Prompt Injection</text>
+          <text class="node-subtitle" x="344" y="944">拒答边界 · 审计 · 风险分级</text>
+        </g>
+        <g class="node" data-node="observability" tabindex="0" role="button" aria-label="可观测性：关联追踪检索、模型输出、延迟、成本与反馈事件">
+          <rect x="598" y="865" width="245" height="86" rx="9" style="--accent:#42c2b0"/>
+          <text class="node-tag" x="614" y="886">OBSERVABILITY</text>
+          <text class="node-title" x="614" y="909">链路追踪与运行指标</text>
+          <text class="node-subtitle" x="614" y="930">Latency · Token Cost · Error Rate</text>
+          <text class="node-subtitle" x="614" y="944">检索证据 · 版本 · 用户反馈</text>
+        </g>
+        <g class="node" data-node="online-eval" tabindex="0" role="button" aria-label="在线质量评估：基于用户反馈和人工抽检监控答案质量并触发改进">
+          <rect x="868" y="865" width="245" height="86" rx="9" style="--accent:#a88bff"/>
+          <text class="node-tag" x="884" y="886">ONLINE QUALITY</text>
+          <text class="node-title" x="884" y="909">在线质量与反馈分析</text>
+          <text class="node-subtitle" x="884" y="930">解决率 · 转人工率 · CSAT</text>
+          <text class="node-subtitle" x="884" y="944">采样评审 · 漂移与失败聚类</text>
+        </g>
+        <g class="node" data-node="release" tabindex="0" role="button" aria-label="实验与发布：通过灰度发布和回滚控制模型、提示词及知识库变更">
+          <rect x="1138" y="865" width="245" height="86" rx="9" style="--accent:#a88bff"/>
+          <text class="node-tag" x="1154" y="886">CONTROLLED RELEASE</text>
+          <text class="node-title" x="1154" y="909">实验、灰度与回滚</text>
+          <text class="node-subtitle" x="1154" y="930">Prompt / Model / Corpus 版本化</text>
+          <text class="node-subtitle" x="1154" y="944">A/B 测试 · Canary · 回滚</text>
+        </g>
+        <path class="flow research" d="M303 908 H328"/>
+        <path class="flow research" d="M573 908 H598"/>
+        <path class="flow research" d="M843 908 H868"/>
+        <path class="flow research" d="M1113 908 H1138"/>
+        <path class="feedback" d="M990 865 V836 H1170 V701"/>
+        <text class="flow-label" x="1000" y="829">人工审核与失败样本 → 知识修订</text>
+        <path class="feedback" d="M1260 865 V780 H532 V701"/>
+        <text class="flow-label" x="793" y="773">评测 / 反馈驱动数据与策略迭代</text>
+
+        <rect x="58" y="975" width="1325" height="34" rx="8" fill="#101b2c" stroke="#283954"/>
+        <text class="pill-text" x="76" y="997">研究关注</text>
+        <text class="svg-small" x="150" y="997">检索质量与上下文构造</text>
+        <circle cx="330" cy="992" r="2" fill="#59708e"/>
+        <text class="svg-small" x="347" y="997">知识时效与权限安全</text>
+        <circle cx="531" cy="992" r="2" fill="#59708e"/>
+        <text class="svg-small" x="548" y="997">答案可溯源与拒答校准</text>
+        <circle cx="766" cy="992" r="2" fill="#59708e"/>
+        <text class="svg-small" x="783" y="997">质量、延迟与推理成本权衡</text>
+        <circle cx="1035" cy="992" r="2" fill="#59708e"/>
+        <text class="svg-small" x="1052" y="997">人工反馈闭环</text>
+      </svg>
+      <div class="caption">
+        <div class="legend" aria-label="系统架构图图例">
+          <span class="legend-item"><i class="swatch" style="--color:#70a9ec"></i>接入与策略</span>
+          <span class="legend-item"><i class="swatch" style="--color:#42c2b0"></i>检索与知识</span>
+          <span class="legend-item"><i class="swatch" style="--color:#a88bff"></i>编排与生成</span>
+          <span class="legend-item"><i class="swatch" style="--color:#d8aa68"></i>数据治理与可信</span>
+        </div>
+        <p id="details" aria-live="polite">选择或聚焦架构模块查看说明。实线表示在线调用或知识加工，虚线表示反馈与治理闭环。</p>
+      </div>
+    </section>
+    <p class="mobile-note">图表在窄屏下可横向滚动，以保持系统模块文字清晰。</p>
+
+    <section class="notes" aria-label="科研架构设计原则">
+      <article class="note">
+        <h2>证据驱动，而非无约束生成</h2>
+        <p>将检索片段、来源位置与权限标签作为显式证据；要求回答引用来源。证据不足时优先澄清或转人工，避免把模型输出误当作事实。</p>
+      </article>
+      <article class="note">
+        <h2>离线知识治理与在线推理解耦</h2>
+        <p>知识解析、切分、索引和审核在离线流水线完成；在线服务只读取已发布版本，并保留知识、Embedding、提示词和模型的版本关联。</p>
+      </article>
+      <article class="note">
+        <h2>以可复现实验驱动迭代</h2>
+        <p>用固定评测集分别观测召回、排序、答案忠实度、安全性与延迟；结合线上解决率、转人工率和用户反馈进行灰度比较与回归验证。</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const details = document.querySelector("#details");
+      const nodes = [...document.querySelectorAll(".node[data-node]")];
+      let selected = null;
+      const descriptions = {
+        web: "网页与移动端接收用户咨询，支持文本或语音输入，并以流式方式呈现答复。",
+        social: "渠道适配层统一公众号、企业微信和在线消息的会话协议与身份上下文。",
+        "agent-ui": "坐席可接管复杂咨询、查看检索证据并对错误答案或知识缺口进行标注。",
+        api: "网关处理 TLS、身份验证、限流、协议适配和审计，为下游提供统一会话 API。",
+        identity: "根据用户身份、租户和数据分级实施知识 ACL 过滤；脱敏策略需在检索前后持续生效。",
+        router: "识别问题类型和置信度，决定进入 RAG、受控工具调用、澄清流程或人工服务。",
+        orchestrator: "编排会话状态、提示模板、检索调用和工具执行，并记录模型与知识版本。",
+        retrieval: "采用向量语义召回与 BM25 关键词检索，针对术语、编号和自然语言问题互补召回。",
+        rerank: "对候选片段重排序、去重并组装上下文，同时保留文档、页码和版本等引用元数据。",
+        llm: "只向模型提供经权限过滤的上下文，并通过受控提示约束格式、引用和拒答行为。",
+        response: "在交付前检查策略、引用和置信信号；低置信、高风险或用户请求可升级至人工。",
+        tools: "只开放经过授权和参数校验的业务工具；默认采用最小权限并优先使用只读接口。",
+        vector: "向量库保存知识片段 Embedding 和可过滤元数据，支持近似最近邻检索。",
+        keyword: "关键词索引补充向量召回，对产品名、政策编号、订单状态等精确词项保持可检索。",
+        human: "人工接管结果可形成有标注的反馈样本，经审核后用于修订知识、路由策略或评测集。",
+        sources: "知识来源包括 FAQ、产品文档、政策规范、历史工单及经授权的内部知识。",
+        ingest: "连接器负责增量同步；解析阶段抽取正文、表格和结构，并保留来源与访问控制元数据。",
+        clean: "清洗去重并按语义边界切分；每个片段保留来源、版本、权限、页码和生效时间。",
+        embed: "离线生成向量和关键词索引，采用增量更新、版本管理和可回滚的发布流程。",
+        "knowledge-store": "分层保存原文、片段、向量、关键词索引和元数据，以支持审计及引用回溯。",
+        curation: "知识专家审核内容准确性、权限和有效期；发布、撤回与回滚均保留版本记录。",
+        evaluation: "使用固定标注集对召回率、排序质量、答案忠实度和拒答行为进行离线评测与消融比较。",
+        safety: "跨越数据与推理层实施隐私、租户隔离、提示注入防护、审计和风险分级。",
+        observability: "关联记录检索证据、模型和知识版本、延迟、成本、错误及人工反馈，便于定位问题。",
+        "online-eval": "结合解决率、转人工率、用户满意度、人工抽检和失败聚类监控线上质量。",
+        release: "模型、提示词与语料版本化，采用 A/B 或灰度发布验证效果，并支持快速回滚。"
+      };
+
+      function show(node) {
+        if (!node) {
+          details.textContent = "选择或聚焦架构模块查看说明。实线表示在线调用或知识加工，虚线表示反馈与治理闭环。";
+          return;
+        }
+        const title = node.querySelector(".node-title").textContent;
+        const strong = document.createElement("strong");
+        strong.textContent = title;
+        details.replaceChildren(strong, document.createTextNode(` · ${descriptions[node.dataset.node]}`));
+      }
+
+      function select(node) {
+        selected = selected === node ? null : node;
+        for (const item of nodes) {
+          const active = item === selected;
+          item.classList.toggle("is-selected", active);
+          item.setAttribute("aria-pressed", String(active));
+        }
+        show(node === selected ? node : null);
+      }
+
+      for (const node of nodes) {
+        node.setAttribute("aria-pressed", "false");
+        node.addEventListener("pointerenter", () => show(node));
+        node.addEventListener("pointerleave", () => show(selected));
+        node.addEventListener("focus", () => show(node));
+        node.addEventListener("blur", () => show(selected));
+        node.addEventListener("click", () => select(node));
+        node.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            select(node);
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

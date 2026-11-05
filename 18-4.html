@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>18-4 ECharts 关系网络与大规模热力图</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: #eaf0ff;
+      background: #090d18;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 50% -12%, rgba(52, 94, 143, .24), transparent 58%),
+        #090d18;
+    }
+
+    .page { width: min(1480px, 100%); margin: 0 auto; padding: 34px clamp(14px, 3vw, 40px) 42px; }
+
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      color: #82b8c5;
+      font: 600 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 8px 0; font-size: clamp(25px, 4vw, 40px); letter-spacing: .025em; }
+    .intro { max-width: 850px; margin: 0; color: #9aa8c2; font-size: 14px; line-height: 1.8; }
+
+    .version {
+      flex: 0 0 auto;
+      padding: 9px 12px;
+      border: 1px solid #2a4354;
+      border-radius: 9px;
+      color: #9ed8d2;
+      font: 11px ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+
+    .panel {
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid #243149;
+      border-radius: 15px;
+      background: rgba(12, 18, 32, .94);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 99px;
+      padding: 19px 20px 13px;
+      border-bottom: 1px solid #202b42;
+    }
+
+    .panel-index {
+      color: #6f89aa;
+      font: 600 10px ui-monospace, SFMono-Regular, Consolas, monospace;
+      letter-spacing: .13em;
+    }
+
+    h2 { margin: 5px 0 4px; color: #dce7fa; font-size: 17px; }
+    .panel-description { margin: 0; color: #8593ac; font-size: 11px; line-height: 1.65; }
+
+    .chart {
+      width: 100%;
+      height: 430px;
+      min-height: 360px;
+    }
+
+    .panel-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 48px;
+      padding: 9px 17px;
+      border-top: 1px solid #202b42;
+      color: #8391aa;
+      font-size: 11px;
+    }
+
+    .metric { color: #a9bad4; font-variant-numeric: tabular-nums; }
+
+    button {
+      min-height: 32px;
+      padding: 0 11px;
+      border: 1px solid #2c3a57;
+      border-radius: 7px;
+      background: #111a2b;
+      color: #dbe6fa;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #77a7ff; background: #17243a; }
+    button:focus-visible { outline: 2px solid #77a7ff; outline-offset: 2px; }
+
+    .research-note {
+      margin-top: 18px;
+      padding: 15px 18px;
+      border: 1px solid #202c42;
+      border-radius: 11px;
+      background: rgba(15, 23, 39, .78);
+      color: #8d9bb4;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .research-note strong { color: #b7cce8; font-weight: 600; }
+
+    .load-error {
+      display: none;
+      margin: 18px 0;
+      padding: 14px 16px;
+      border: 1px solid #8e4653;
+      border-radius: 9px;
+      background: #321a24;
+      color: #ffd5db;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .charts { grid-template-columns: 1fr; }
+      .chart { height: 460px; }
+    }
+
+    @media (max-width: 560px) {
+      .page { padding-top: 24px; }
+      .header { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .panel-header { min-height: auto; padding: 16px; }
+      .chart { height: 390px; min-height: 330px; }
+      .panel-footer { padding-inline: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <div>
+        <div class="eyebrow">18-4 · ECharts Data Visualization</div>
+        <h1>关系网络与大规模热力图</h1>
+        <p class="intro">使用 ECharts 展示复杂关系网络和高密度二维数据。探索节点连接结构，并从热力分布中观察数据集的局部聚集与整体模式。</p>
+      </div>
+      <div class="version">Apache ECharts 5.6.0 · 本地运行</div>
+    </header>
+
+    <p id="load-error" class="load-error" role="alert">ECharts 本地库未能加载。请确认 <code>cdn/echarts.min.js</code> 文件存在后重新打开页面。</p>
+
+    <section class="charts" aria-label="ECharts 示例图表">
+      <article class="panel">
+        <header class="panel-header">
+          <div>
+            <div class="panel-index">01 / GRAPH ON CARTESIAN GRID</div>
+            <h2>分群关系网络</h2>
+            <p class="panel-description">基于直角坐标系定位节点，颜色标记社群，连线表示节点间关联。</p>
+          </div>
+        </header>
+        <div id="graph-chart" class="chart" role="img" aria-label="展示多个社群节点及其关联关系的网络图"></div>
+        <footer class="panel-footer">
+          <span id="graph-metric" class="metric">关系网络 · 正在初始化…</span>
+          <button id="reset-graph" type="button">重置视图</button>
+        </footer>
+      </article>
+
+      <article class="panel">
+        <header class="panel-header">
+          <div>
+            <div class="panel-index">02 / LARGE HEATMAP</div>
+            <h2>大规模二维热力图</h2>
+            <p class="panel-description">密集栅格数据与渐变色标，呈现局部热点、周期结构与背景噪声。</p>
+          </div>
+        </header>
+        <div id="heatmap-chart" class="chart" role="img" aria-label="展示一万多个网格单元强度值的大规模热力图"></div>
+        <footer class="panel-footer">
+          <span id="heatmap-metric" class="metric">热力数据 · 正在初始化…</span>
+          <button id="refresh-heatmap" type="button">重新采样</button>
+        </footer>
+      </article>
+    </section>
+
+    <aside class="research-note">
+      <strong>科研与性能提示：</strong>关系图采用固定坐标以便稳定比较社群结构；热力图使用二维坐标、批量数据和 ECharts 大数据渲染配置。实际研究中可将模拟数据替换为实验观测值，并进一步比较数据规模、采样策略和渲染耗时。
+    </aside>
+  </main>
+
+  <script src="./cdn/echarts.min.js"></script>
+  <script>
+    (() => {
+      const errorBox = document.querySelector("#load-error");
+      if (!window.echarts) {
+        errorBox.style.display = "block";
+        return;
+      }
+
+      const palette = ["#6da9ed", "#a68af1", "#46c4ae", "#e7ae65", "#e87991"];
+      const groups = [
+        { name: "语义相似", center: [22, 72] },
+        { name: "引用关联", center: [49, 77] },
+        { name: "协作关系", center: [77, 67] },
+        { name: "主题聚类", center: [35, 29] },
+        { name: "跨域连接", center: [72, 30] }
+      ];
+
+      function createGraphData() {
+        const nodes = [];
+        const links = [];
+        const random = seededRandom(2026);
+        const perGroup = 12;
+
+        groups.forEach((group, groupIndex) => {
+          for (let index = 0; index < perGroup; index++) {
+            const angle = (index / perGroup) * Math.PI * 2 + groupIndex * .38;
+            const radius = 4 + random() * 11;
+            nodes.push({
+              id: `g${groupIndex}-n${index}`,
+              name: `${group.name} ${String(index + 1).padStart(2, "0")}`,
+              category: groupIndex,
+              x: Math.max(3, Math.min(97, group.center[0] + Math.cos(angle) * radius)),
+              y: Math.max(4, Math.min(96, group.center[1] + Math.sin(angle) * radius)),
+              symbolSize: 8 + random() * 8,
+              score: Math.round(20 + random() * 80)
+            });
+            nodes[nodes.length - 1].value = [nodes[nodes.length - 1].x, nodes[nodes.length - 1].y];
+          }
+        });
+
+        groups.forEach((_, groupIndex) => {
+          const start = groupIndex * perGroup;
+          for (let index = 0; index < perGroup; index++) {
+            const current = start + index;
+            links.push({
+              source: nodes[current].id,
+              target: nodes[start + ((index + 1) % perGroup)].id,
+              value: +(0.65 + random() * .35).toFixed(2)
+            });
+            if (index % 2 === 0) {
+              links.push({
+                source: nodes[current].id,
+                target: nodes[start + ((index + 4) % perGroup)].id,
+                value: +(0.3 + random() * .5).toFixed(2)
+              });
+            }
+            if (index % 4 === 0) {
+              const nextGroup = (groupIndex + 1) % groups.length;
+              links.push({
+                source: nodes[current].id,
+                target: nodes[nextGroup * perGroup + ((index * 2) % perGroup)].id,
+                value: +(0.2 + random() * .45).toFixed(2)
+              });
+            }
+          }
+        });
+
+        return { nodes, links };
+      }
+
+      function seededRandom(seed) {
+        let state = seed >>> 0;
+        return () => {
+          state = (state * 1664525 + 1013904223) >>> 0;
+          return state / 4294967296;
+        };
+      }
+
+      const graphChart = echarts.init(document.querySelector("#graph-chart"));
+      const heatmapChart = echarts.init(document.querySelector("#heatmap-chart"));
+      const graphMetric = document.querySelector("#graph-metric");
+      const heatmapMetric = document.querySelector("#heatmap-metric");
+      const graphData = createGraphData();
+
+      const graphOption = {
+        animationDuration: 700,
+        animationEasing: "cubicOut",
+        color: palette,
+        tooltip: {
+          trigger: "item",
+          backgroundColor: "rgba(12, 18, 32, .96)",
+          borderColor: "#344967",
+          textStyle: { color: "#eaf0ff" },
+          formatter(params) {
+            if (params.dataType === "edge") {
+              return `${params.data.source} ↔ ${params.data.target}<br>关联强度：${params.data.value}`;
+            }
+            const category = groups[params.data.category]?.name || "未分类";
+            return `${params.data.name}<br>社群：${category}<br>关联度：${params.data.score}`;
+          }
+        },
+        legend: {
+          top: 8,
+          left: "center",
+          itemWidth: 9,
+          itemHeight: 9,
+          textStyle: { color: "#a9b7ce", fontSize: 10 },
+          data: groups.map((group) => group.name)
+        },
+        grid: { left: 48, right: 24, top: 58, bottom: 45, containLabel: false },
+        xAxis: {
+          type: "value",
+          min: 0,
+          max: 100,
+          name: "结构维度 X",
+          nameLocation: "middle",
+          nameGap: 27,
+          axisLine: { lineStyle: { color: "#40516d" } },
+          axisLabel: { color: "#8292ad", fontSize: 10 },
+          nameTextStyle: { color: "#8493ad", fontSize: 10 },
+          splitLine: { lineStyle: { color: "rgba(89, 111, 145, .15)", type: "dashed" } }
+        },
+        yAxis: {
+          type: "value",
+          min: 0,
+          max: 100,
+          name: "结构维度 Y",
+          nameLocation: "middle",
+          nameGap: 31,
+          axisLine: { lineStyle: { color: "#40516d" } },
+          axisLabel: { color: "#8292ad", fontSize: 10 },
+          nameTextStyle: { color: "#8493ad", fontSize: 10 },
+          splitLine: { lineStyle: { color: "rgba(89, 111, 145, .15)", type: "dashed" } }
+        },
+        dataZoom: [
+          { type: "inside", xAxisIndex: 0, filterMode: "none" },
+          { type: "inside", yAxisIndex: 0, filterMode: "none" }
+        ],
+        series: [{
+          type: "graph",
+          coordinateSystem: "cartesian2d",
+          layout: "none",
+          data: graphData.nodes,
+          links: graphData.links,
+          categories: groups.map((group, index) => ({ name: group.name, itemStyle: { color: palette[index] } })),
+          roam: true,
+          draggable: true,
+          symbol: "circle",
+          edgeSymbol: ["none", "arrow"],
+          edgeSymbolSize: 5,
+          edgeLabel: { show: false },
+          label: {
+            show: true,
+            position: "right",
+            distance: 5,
+            color: "#bdcbe0",
+            fontSize: 8,
+            formatter: (params) => params.data.name.replace(/^.*? /, "")
+          },
+          lineStyle: { color: "source", opacity: .31, width: 1.1, curveness: .08 },
+          emphasis: {
+            focus: "adjacency",
+            lineStyle: { opacity: .85, width: 2 },
+            label: { show: true, fontSize: 10, fontWeight: 600 }
+          }
+        }]
+      };
+
+      graphChart.setOption(graphOption);
+      graphMetric.textContent = `${graphData.nodes.length} 个节点 · ${graphData.links.length} 条关系 · 5 个社群`;
+
+      const gridSize = 110;
+      let heatmapSeed = 20261105;
+
+      function createHeatmapData(seed) {
+        const random = seededRandom(seed);
+        const centers = [
+          [24, 28, 19, 3.8],
+          [77, 31, 24, 5.2],
+          [57, 79, 16, 3.2],
+          [32, 73, 11, 6]
+        ];
+        const values = [];
+
+        for (let y = 0; y < gridSize; y++) {
+          for (let x = 0; x < gridSize; x++) {
+            let intensity = 7 + 4 * Math.sin(x / 8) * Math.cos(y / 11);
+            for (const [centerX, centerY, strength, radius] of centers) {
+              const dx = x - centerX;
+              const dy = y - centerY;
+              intensity += strength * Math.exp(-(dx * dx + dy * dy) / (2 * radius * radius));
+            }
+            intensity += (random() - .5) * 5;
+            values.push([x, y, Math.max(0, Math.min(60, +intensity.toFixed(2)))]);
+          }
+        }
+        return values;
+      }
+
+      function buildHeatmapOption(data) {
+        return {
+          animation: false,
+          tooltip: {
+            position: "top",
+            backgroundColor: "rgba(12, 18, 32, .96)",
+            borderColor: "#344967",
+            textStyle: { color: "#eaf0ff" },
+            formatter: (params) =>
+              `坐标：(${params.data[0]}, ${params.data[1]})<br>强度：${params.data[2].toFixed(2)}`
+          },
+          grid: { left: 51, right: 64, top: 30, bottom: 52 },
+          xAxis: {
+            type: "value",
+            min: 0,
+            max: gridSize - 1,
+            interval: 20,
+            name: "空间 / 特征维度 X",
+            nameLocation: "middle",
+            nameGap: 28,
+            axisLine: { lineStyle: { color: "#40516d" } },
+            axisLabel: { color: "#8292ad", fontSize: 9 },
+            nameTextStyle: { color: "#8493ad", fontSize: 10 },
+            splitLine: { show: false }
+          },
+          yAxis: {
+            type: "value",
+            min: 0,
+            max: gridSize - 1,
+            interval: 20,
+            name: "空间 / 特征维度 Y",
+            nameLocation: "middle",
+            nameGap: 34,
+            axisLine: { lineStyle: { color: "#40516d" } },
+            axisLabel: { color: "#8292ad", fontSize: 9 },
+            nameTextStyle: { color: "#8493ad", fontSize: 10 },
+            splitLine: { show: false }
+          },
+          visualMap: {
+            min: 0,
+            max: 60,
+            dimension: 2,
+            calculable: false,
+            orient: "vertical",
+            right: 10,
+            top: "middle",
+            itemWidth: 10,
+            itemHeight: 120,
+            text: ["高", "低"],
+            textStyle: { color: "#9ba9c0", fontSize: 9 },
+            inRange: {
+              color: ["#18283c", "#245d72", "#33b6a1", "#e9c66c", "#ed815d"]
+            },
+            outOfRange: { color: ["#18283c"] }
+          },
+          series: [{
+            type: "heatmap",
+            data,
+            progressive: 10000,
+            progressiveThreshold: 20000,
+            itemStyle: { borderWidth: 0 },
+            emphasis: {
+              itemStyle: { borderColor: "#fff2ca", borderWidth: 1 },
+              shadowBlur: 7,
+              shadowColor: "rgba(255, 222, 145, .5)"
+            }
+          }]
+        };
+      }
+
+      function renderHeatmap(seed) {
+        const data = createHeatmapData(seed);
+        heatmapChart.setOption(buildHeatmapOption(data), true);
+        heatmapMetric.textContent = `${data.length.toLocaleString("zh-CN")} 个栅格 · ${gridSize} × ${gridSize} · 渐进渲染`;
+      }
+
+      renderHeatmap(heatmapSeed);
+
+      document.querySelector("#reset-graph").addEventListener("click", () => {
+        graphChart.dispatchAction({ type: "restore" });
+      });
+
+      document.querySelector("#refresh-heatmap").addEventListener("click", () => {
+        heatmapSeed = (heatmapSeed + 7919) >>> 0;
+        renderHeatmap(heatmapSeed);
+      });
+
+      const resizeObserver = new ResizeObserver(() => {
+        graphChart.resize();
+        heatmapChart.resize();
+      });
+      resizeObserver.observe(document.querySelector(".charts"));
+      window.addEventListener("beforeunload", () => {
+        resizeObserver.disconnect();
+        graphChart.dispose();
+        heatmapChart.dispose();
+      }, { once: true });
+    })();
+  </script>
+</body>
+</html>
